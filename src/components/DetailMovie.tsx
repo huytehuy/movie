@@ -48,7 +48,7 @@ const DetailMovie=()=>{
             <div key={index}>{episode.server_name}</div>
             <Grid>
             {episode.server_data?.map((data, dataIndex) =>(
-               <Grid.Col span='content'>
+               <Grid.Col key={dataIndex} span='content'>
               <Button><Link to={data.link_embed} style={{color:'black'}}>{data.name}</Link></Button>
               </Grid.Col>
             ))}
