@@ -19,7 +19,9 @@
     "install": "^0.13.0",
     "npm": "^10.5.0",
     "react": "^18.2.0",
+    "react-device-detect": "^2.2.3",
     "react-dom": "^18.2.0",
+    "react-lazy-load-image-component": "^1.6.0",
     "react-player": "^2.16.0",
     "react-router-dom": "^6.23.0",
     "socket.io-client": "^4.7.5"
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
+    "@types/react-lazy-load-image-component": "^1.6.4",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react-swc": "^3.5.0",

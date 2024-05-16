@@ -2,6 +2,7 @@ import { Button, Grid, LoadingOverlay } from "@mantine/core";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom"
+import { LazyLoadImage } from "react-lazy-load-image-component";
 interface FilmData {
   movie: {
       name: string;
@@ -22,7 +23,6 @@ const DetailMovie=()=>{
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        console.log(id)
         const fetchData = async () => {
         setVisible(true)
           try {
@@ -36,12 +36,11 @@ const DetailMovie=()=>{
     
         fetchData();
       }, []);
-      console.log(filmData)
     return (
         <>
          <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
         <div>{filmData?.movie?.name}</div>
-        <img src={filmData?.movie?.poster_url} alt={filmData?.movie?.name} style={{ width: '70%' }} />
+        <LazyLoadImage src={filmData?.movie?.poster_url} style={{ width: '70%' }} alt="Image Alt" />
         <div>
           {filmData?.episodes?.map((episode, index) => (
             <>
@@ -53,7 +52,6 @@ const DetailMovie=()=>{
               </Grid.Col>
             ))}
             </Grid>
-            {/* <Button ><Link to={episode.server_data[1]?.link_embed} style={{color:'black'}}>{episode.server_data[1]?.name}</Link></Button> */}
             </>
           ))}
         </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Grid, LoadingOverlay} from '@mantine/core';
+import { Button, Grid, Input, LoadingOverlay} from '@mantine/core';
+import { LazyLoadImage } from "react-lazy-load-image-component";
 
 const SearchComponent = () => {
   const [query, setQuery] = useState('');
@@ -11,11 +12,11 @@ const SearchComponent = () => {
 
   const fetchData = async () => {
     setVisible(true);
+    setData([]);
     try {
       const response = await axios.get(`https://ophim1.com/v1/api/tim-kiem?keyword=${query}`,{
       });
       setData(response.data?.data?.items);
-      console.log(response.data.data.items)
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -31,13 +32,14 @@ const SearchComponent = () => {
   return (
     <div >
       <form onSubmit={handleSubmit} style={{display:'flex',justifyContent:'center',alignItems:'center'}}>
-        <input
+        <Input
+          mr={5}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Enter search query"
         />
-        <button type="submit">Search</button>
+        <Button type="submit">Search</Button>
       </form>
       {data && (
          <div style={{marginTop:20}}>
@@ -47,10 +49,13 @@ const SearchComponent = () => {
         <div style={{display:'flex',justifyContent:'center',alignItems:'center',flexWrap:'wrap'}}>
         <Grid>
           {data.map((item, index) => (
-            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Grid.Col span={{ base: 6, md: 6, lg: 3 }}>
             <div key={index} style={{display:'flex',justifyContent:'center',alignItems:'center',flexWrap:'wrap'}} >
-            <Link style={{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',flexWrap:'wrap'}} to={"/detail/"+item.slug} className=''>
-      <img  height={300} src={`https://img.ophim15.cc/uploads/movies/${item.thumb_url}`}/>
+            <Link style={{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',flexWrap:'wrap'}} to={"/detail/"+item.slug}>
+            <LazyLoadImage src={`https://img.ophim15.cc/uploads/movies/${item.thumb_url}`}
+         height={250}
+        alt="Image Alt"
+      />
             <div>{item.name}</div>
            
             </Link>
