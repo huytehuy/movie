@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
-import SearchComponent from './search';
 import { LoadingOverlay, Grid, Pagination } from '@mantine/core';
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { Category, CategoryName } from '../data/enumCategory';
+import SearchInput from './SearchData';
+import PlaceHolderImage from '../assets/800@3x.png'
 
 const MyComponent = () => {
   const [data, setData] = useState<any[]>([]);
@@ -13,12 +14,13 @@ const MyComponent = () => {
   const [pagePresent, setPagePresent] = useState(1);
   const location = useLocation();
   const [currentLocation, setCurrentLocation] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const currentPath = location.pathname.substring(1);
     setCurrentLocation(currentPath);
-    setPagePresent(1); // Remove the leading slash
-    console.log(currentPath);
+    setPagePresent(1);
+    
   }, [location]);
   useEffect(() => {
     const fetchData = async (apiFirst: string) => {
@@ -39,6 +41,9 @@ const MyComponent = () => {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setTimeout(() => {
+          setRetryCount(retryCount + 1);
+        }, 1000);
       }
       setVisible(false)
     };
@@ -54,12 +59,12 @@ const MyComponent = () => {
     else if (currentLocation == (Category.phim_dang_hot)) {
       fetchData('https://api.npoint.io/4d374d81c2a7f88140a4');
     }
-  }, [pagePresent,currentLocation]);
+  }, [pagePresent, currentLocation,retryCount]);
 
   return (
     <div>
       <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
-      <SearchComponent />
+      <SearchInput/>
       <h1 style={{ textAlign: 'center' }}>{CategoryName[currentLocation as keyof typeof Category]}</h1>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
         <Grid>
@@ -67,14 +72,14 @@ const MyComponent = () => {
             <Grid.Col span={{ base: 6, md: 6, lg: 3 }}>
               <div key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} >
                 <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item.slug} className=''>
-                  <LazyLoadImage height={250} src={`https://img.ophim15.cc/uploads/movies/${item.thumb_url}`} alt='image' />
+                  <LazyLoadImage height={250} src={`https://img.ophim15.cc/uploads/movies/${item.thumb_url}`} alt='image' placeholderSrc={PlaceHolderImage} />
                   <div>{item.name}</div>
                 </Link>
               </div>
             </Grid.Col>
           ))}
         </Grid>
-        {currentLocation === Category.phim_moi ? <Pagination total={pageCount?.totalPages} onChange={setPagePresent} siblings={1} defaultValue={1} value={pagePresent} /> : currentLocation== Category.phim_dang_hot ? <div></div> : <Pagination total={pageCount?.pageRanges} onChange={setPagePresent} siblings={3} defaultValue={1} value={pagePresent} />}
+        {currentLocation === Category.phim_moi ? <Pagination total={pageCount?.totalPages} onChange={setPagePresent} siblings={5} defaultValue={1} value={pagePresent} /> : currentLocation == Category.phim_dang_hot ? <div></div> : <Pagination total={pageCount?.pageRanges} onChange={setPagePresent} siblings={5} defaultValue={1} value={pagePresent} />}
       </div>
     </div>
   );

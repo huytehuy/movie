@@ -1,52 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
-import { Button, Grid, Input, LoadingOverlay } from '@mantine/core';
+import { Link, useParams } from 'react-router-dom';
+import { Grid, LoadingOverlay } from '@mantine/core';
 import { LazyLoadImage } from "react-lazy-load-image-component";
+import SearchInput from './SearchData';
 import PlaceHolderImage from '../assets/800@3x.png'
 
-const SearchComponent = () => {
-  const [query, setQuery] = useState('');
+const SearchData = () => {
   const [data, setData] = useState<any[]>([]);
   const [visible, setVisible] = useState(false);
-  const [visibleResult, setVisibleResult] = useState(false);
-
-  const fetchData = async (query:any) => {
-    setVisible(true);
-    setData([]);
-    try {
-      const response = await axios.get(`https://ophim1.com/v1/api/tim-kiem?keyword=${query}`, {
-      });
-      setData(response.data?.data?.items);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-    setVisible(false);
-    setVisibleResult(true);
-  };
-
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    fetchData(query);
-  };
-
+  const { id } = useParams();
+  useEffect(() => {
+    const fetchData = async (query: any) => {
+      setVisible(true);
+      setData([]);
+      try {
+        const response = await axios.get(`https://ophim1.com/v1/api/tim-kiem?keyword=${query}`, {
+        });
+        setData(response.data?.data?.items);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+      setVisible(false);
+    };
+    fetchData(id)
+  }, [id])
   return (
     <div >
-      <form onSubmit={handleSubmit} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <Input
-          mr={5}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Phim cần tìm"
-        />
-        <Button type="submit">Tìm kiếm</Button>
-      </form>
+      <SearchInput />
       {data && (
         <div style={{ marginTop: 20 }}>
           <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
-
-          {visibleResult && <h1 style={{ textAlign: 'center' }}>Result of Search</h1>}
+          <h1 style={{ textAlign: 'center' }}>Kết quả của từ khoá {id}</h1>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
             <Grid>
               {data.map((item, index) => (
@@ -59,7 +44,6 @@ const SearchComponent = () => {
                         placeholderSrc={PlaceHolderImage}
                       />
                       <div>{item.name}</div>
-
                     </Link>
                   </div>
                 </Grid.Col>
@@ -72,4 +56,4 @@ const SearchComponent = () => {
   );
 };
 
-export default SearchComponent;
+export default SearchData;
