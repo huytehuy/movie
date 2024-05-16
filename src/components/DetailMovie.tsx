@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom"
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import SearchInput from "./SearchData";
-import PlaceHolderImage from '../assets/800@3x.png'
 interface FilmData {
   movie: {
     name: string;

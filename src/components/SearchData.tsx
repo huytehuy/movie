@@ -1,4 +1,4 @@
-import { Box, Button, Input } from "@mantine/core"
+import { Button, Input } from "@mantine/core"
 import { useState } from "react"
 import { Link, redirect } from "react-router-dom";
 
