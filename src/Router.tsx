@@ -1,7 +1,6 @@
 import MyComponent from './components/axios'
 import { Navigate, Route, Routes} from 'react-router-dom'
 import DetailMovie from './components/DetailMovie'
-import { Category } from './data/enumCategory'
 
 function Router() {
   return (
