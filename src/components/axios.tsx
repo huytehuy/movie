@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
-import { LoadingOverlay, Grid, Pagination } from '@mantine/core';
+import { LoadingOverlay, Grid, Pagination, Loader } from '@mantine/core';
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { Category, CategoryName } from '../data/enumCategory';
 import SearchInput from './SearchData';
-import PlaceHolderImage from '../assets/800@3x.png'
 
 const MyComponent = () => {
   const [data, setData] = useState<any[]>([]);
@@ -60,7 +59,6 @@ const MyComponent = () => {
       fetchData('https://api.npoint.io/4d374d81c2a7f88140a4');
     }
   }, [pagePresent, currentLocation,retryCount]);
-
   return (
     <div>
       <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
@@ -72,7 +70,7 @@ const MyComponent = () => {
             <Grid.Col span={{ base: 6, md: 6, lg: 3 }}>
               <div key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} >
                 <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item.slug} className=''>
-                  <LazyLoadImage height={250} src={`https://img.ophim15.cc/uploads/movies/${item.thumb_url}`} alt='image' placeholderSrc={PlaceHolderImage} />
+                  <LazyLoadImage height={250} src={`https://img.ophim15.cc/uploads/movies/${item.thumb_url}`} alt='image' />
                   <div>{item.name}</div>
                 </Link>
               </div>

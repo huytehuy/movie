@@ -124,7 +124,7 @@ const DetailMovie = () => {
             <Grid>
               {episode.server_data?.map((data, dataIndex) => (
                 <Grid.Col key={dataIndex} span='content'>
-                  <Button><Link to={data.link_embed} style={{ color: 'black' }}>{data.name}</Link></Button>
+                 <Link to={data.link_embed} style={{ color: 'black' }}> <Button onClick={()=>setVisible(true)}>{data.name}</Button></Link>
                 </Grid.Col>
               ))}
             </Grid>
@@ -137,7 +137,7 @@ const DetailMovie = () => {
             <Grid>
               {episode.items?.map((data, dataIndex) => (
                 <Grid.Col key={dataIndex} span='content'>
-                  <Button><Link to={data.embed} style={{ color: 'black' }}>{data.name}</Link></Button>
+                  <Link to={data.embed} style={{ color: 'black' }}><Button onClick={()=>setVisible(true)}>{data.name}</Button></Link>
                 </Grid.Col>
               ))}
             </Grid>
