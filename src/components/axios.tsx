@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
-import { LoadingOverlay, Grid, Pagination, Loader } from '@mantine/core';
+import { LoadingOverlay, Grid, Pagination } from '@mantine/core';
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { Category, CategoryName } from '../data/enumCategory';
 import SearchInput from './SearchData';
