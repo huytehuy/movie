@@ -75,6 +75,14 @@ const DetailMovie = () => {
 
     fetchData();
   }, []);
+
+  const handleButtonClick = () => {
+    setVisible(true);
+    setTimeout(() => {
+      setVisible(false);
+    }, 2000);
+  };
+
   return (
     <>
       <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
@@ -124,7 +132,7 @@ const DetailMovie = () => {
             <Grid>
               {episode.server_data?.map((data, dataIndex) => (
                 <Grid.Col key={dataIndex} span='content'>
-                 <Link to={data.link_embed} style={{ color: 'black' }}> <Button onClick={()=>setVisible(true)}>{data.name}</Button></Link>
+                 <Link to={data.link_embed} style={{ color: 'black' }}><Button onClick={handleButtonClick} >{data.name}</Button></Link>
                 </Grid.Col>
               ))}
             </Grid>
@@ -137,7 +145,7 @@ const DetailMovie = () => {
             <Grid>
               {episode.items?.map((data, dataIndex) => (
                 <Grid.Col key={dataIndex} span='content'>
-                  <Link to={data.embed} style={{ color: 'black' }}><Button onClick={()=>setVisible(true)}>{data.name}</Button></Link>
+                  <Link to={data.embed} style={{ color: 'black' }}><Button onClick={handleButtonClick}>{data.name}</Button></Link>
                 </Grid.Col>
               ))}
             </Grid>
