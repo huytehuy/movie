@@ -1,4 +1,4 @@
-import { Badge, Button, LoadingOverlay, Stack } from "@mantine/core";
+import { Badge, Box, LoadingOverlay, Paper, Stack, Text, Image } from "@mantine/core";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -30,6 +30,12 @@ const SportComponnet = () => {
             setVisible(false)
         };
         fetchData()
+        const interval = setInterval(() => {// Fetch data every 2 minutes
+        }, 120000);
+
+        // Cleanup interval to avoid memory leaks
+        return () => clearInterval(interval);
+       
     }, [])
 
     console.log(data)
@@ -50,7 +56,7 @@ const SportComponnet = () => {
     });
     return (
         <div>
-             <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+            <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
             <Stack
                 h={300}
                 bg="var(--mantine-color-body)"
@@ -58,13 +64,41 @@ const SportComponnet = () => {
                 justify="flex-start"
                 gap="md"
             >
-                {liveMatches.map((value: any, index: any) => (
+                {liveMatches.map((value: any, index: any) => {
+                    return (
 
-                    <div style={{display:'flex',alignItems:'center'}}>
-                        <Badge size="lg" w={100} mr={15} color="blue">{value?.parse_data==null?value?.match_status:value?.parse_data?.time}</Badge>
-                        <Link to={`/sportDetail/${value.id}`}><Button key={index}>{value.name}</Button></Link>
-                    </div>
-                ))}
+                        <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                            <Link key={index} to={`/sportDetail/${value.id}`} style={{width:'100%'}}>
+                            <Paper shadow="xs" p="xl" style={{ width: '100%',display:'flex',alignItems:'center' }}>
+
+                                <Box style={{ display: 'flex', alignItems: 'center',width:400 }}>
+                                    <Badge size="md" w={80} mr={15} color="blue">{value?.parse_data == null ? value?.match_status : value?.parse_data?.time}</Badge>
+                                    <Box>
+                                        <Box style={{display:'flex'}}>
+                                        <Badge mr={5} size="md">{value?.scores?.home}</Badge>
+                                            <Image height={25} style={{ objectFit: 'contain' }} src={value?.home?.logo} />
+                                            <Text>{value?.home?.name}</Text>
+                                        </Box>
+                                        <Box style={{ display: 'flex' }}>
+                                        <Badge mr={5} size="md">{value?.scores?.away}</Badge>
+                                            <Image height={25} style={{ objectFit: 'contain' }} src={value?.away?.logo} />
+                                            <Text>{value?.away?.name}</Text>
+                                        </Box>
+                                    </Box>
+                                </Box>
+                                <Box style={{display:'flex'}}>
+                                <Image mr={5} src={value?.tournament?.logo} height={25} style={{ objectFit: 'contain' }}/>
+                                <Box>{value?.tournament?.name}</Box>
+                                </Box>
+                                
+                               
+                                
+                            </Paper></Link>
+
+
+                        </div>
+                    );
+                })}
             </Stack >
         </div>
 

@@ -33,7 +33,7 @@ const SportDetail = () => {
         fetchData()
     }, [id])
     console.log(data)
-    const handleButtonClick = (url: any,name:any) => {
+    const handleButtonClick = (url: any, name: any) => {
         setLink(url);
         setReloadIframe(true); // Set reloadIframe to true to reload the iframe
         setActive(name);
@@ -47,25 +47,25 @@ const SportDetail = () => {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
             <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
-            {isMobile?            <iframe
+            {isMobile ? <iframe
                 width="360"
                 height="400"
                 src={`https://xem.bdhub.xyz/v7/?link=${link}&is_live=0&theme_id=vebotv`}
                 frameBorder="0"
                 allowFullScreen
                 onLoad={handleIframeLoad}
-            />:            <iframe
-            width="1280"
-            height="720"
-            src={`https://xem.bdhub.xyz/v7/?link=${link}&is_live=0&theme_id=vebotv`}
-            frameBorder="0"
-            allowFullScreen
-            onLoad={handleIframeLoad}
-        />}
-            
-            <div style={{marginTop:10}}>
+            /> : <iframe
+                width="1280"
+                height="720"
+                src={`https://xem.bdhub.xyz/v7/?link=${link}&is_live=0&theme_id=vebotv`}
+                frameBorder="0"
+                allowFullScreen
+                onLoad={handleIframeLoad}
+            />}
+
+            <div style={{ marginTop: 10 }}>
                 {data.map((value, index) => (
-                        <Button style={{marginRight:10}} color={active==value.name?'#1c3246':'blue'} key={index} onClick={() => handleButtonClick(value?.url,value?.name)}>{value.name}</Button>
+                    <Button style={{ marginRight: 10 }} color={active == value.name ? '#1c3246' : 'blue'} key={index} onClick={() => handleButtonClick(value?.url, value?.name)}>{value.name}</Button>
                 ))}
             </div>
 
