@@ -2,6 +2,8 @@ import MyComponent from './components/axios'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import DetailMovie from './components/DetailMovie'
 import SearchData from './components/searchMovie'
+import SportComponnet from './components/Sport'
+import SportDetail from './components/SportDetail'
 
 function Router() {
   return (
@@ -13,6 +15,8 @@ function Router() {
       <Route path="/phim_dang_hot" element={<MyComponent />} />
       <Route path="/detail/:id" element={<DetailMovie />} />
       <Route path="/search/:id" element={<SearchData/>} />
+      <Route path="/sport" element={<SportComponnet/>} />
+      <Route path="/sportDetail/:id" element={<SportDetail/>} />
     </Routes>
   )
 }

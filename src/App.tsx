@@ -24,6 +24,10 @@ const data = [
     name: 'Phim mới',
     link: 'phim_moi'
   },
+  {
+    name: 'Trực tiếp bóng đá',
+    link: 'sport'
+  },
 ];
 function App() {
   const [opened, { toggle }] = useDisclosure();
