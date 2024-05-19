@@ -59,6 +59,7 @@ const MyComponent = () => {
       fetchData('https://api.npoint.io/4d374d81c2a7f88140a4');
     }
   }, [pagePresent, currentLocation,retryCount]);
+  console.log(data)
   return (
     <div>
       <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />

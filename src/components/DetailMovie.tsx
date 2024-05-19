@@ -45,6 +45,7 @@ const DetailMovie = () => {
   const [filmData, setFilmData] = useState<FilmData>();
   const [filmData2, setFilmData2] = useState<FilmData2>();
   const [visible, setVisible] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,12 +70,17 @@ const DetailMovie = () => {
         console.log(response2.data.movie)
       } catch (error) {
         console.error("Error fetching film data:", error);
+        if(retryCount<=2){
+        setTimeout(() => {
+          setRetryCount(retryCount + 1);
+        }, 1000);
+      }
       }
       setVisible(false)
     };
 
     fetchData();
-  }, []);
+  }, [retryCount]);
 
   const handleButtonClick = () => {
     setVisible(true);
