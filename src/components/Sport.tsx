@@ -35,7 +35,7 @@ const SportComponnet = () => {
 
         // Cleanup interval to avoid memory leaks
         return () => clearInterval(interval);
-       
+
     }, [])
 
     console.log(data)
@@ -68,37 +68,40 @@ const SportComponnet = () => {
                     return (
 
                         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                            <Link key={index} to={`/sportDetail/${value.id}`} style={{width:'100%'}}>
-                            <Paper shadow="xs" p="xl" style={{ width: '100%',display:'flex',alignItems:'center',justifyContent:'space-between' }}>
-
-                                <Box style={{ display: 'flex', alignItems: 'center' }}>
-                                    <Box style={{minWidth:80}}>{value?.parse_data == null ? value?.match_status : value?.parse_data?.time}</Box>
-                                    <Box>
-                                        <Stack>
-                                        <Box style={{display:'flex'}}>
-                                            <Image height={25} style={{ objectFit: 'contain' }} src={value?.home?.logo} />
-                                            <Text>{value?.home?.name}</Text>
-                                        </Box>
-                                        <Box style={{ display: 'flex' }}>
-                                            <Image height={25} style={{ objectFit: 'contain' }} src={value?.away?.logo} />
-                                            <Text>{value?.away?.name}</Text>
-                                        </Box>
-                                        </Stack>
-
+                            <Link key={index} to={`/sportDetail/${value.id}`} style={{ width: '100%' }}>
+                                <Paper shadow="xs" p="xl" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',position:'relative' }}>
+                                    <Box style={{position:'absolute',top:5,display:'flex'}}>
+                                        <Image mr={5} src={value?.tournament?.logo} height={25} style={{ objectFit: 'contain' }} />
+                                        <Box>{value?.tournament?.name}</Box>
                                     </Box>
-                                </Box>
-                                <Box style={{display:'flex',flexDirection:'column'}}>
-                                <Stack>
-                                <Badge size="xl">{value?.scores?.home}</Badge>
-                                <Badge size="xl">{value?.scores?.away}</Badge>
-                                </Stack>
-                                {/* <Image mr={5} src={value?.tournament?.logo} height={25} style={{ objectFit: 'contain' }}/>
+                                    <Box style={{ display: 'flex', alignItems: 'center' }}>
+                                        <Box style={{ minWidth: 80 }}>{value?.parse_data == null ? value?.match_status : value?.parse_data?.time}</Box>
+                                        <Box>
+                                            <Stack>
+                                                <Box style={{ display: 'flex' }}>
+                                                    <Image height={25} style={{ objectFit: 'contain' }} src={value?.home?.logo} />
+                                                    <Text>{value?.home?.name}</Text>
+                                                </Box>
+                                                <Box style={{ display: 'flex' }}>
+                                                    <Image height={25} style={{ objectFit: 'contain' }} src={value?.away?.logo} />
+                                                    <Text>{value?.away?.name}</Text>
+                                                </Box>
+                                            </Stack>
+
+                                        </Box>
+                                    </Box>
+                                    <Box style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <Stack>
+                                            <Badge size="xl">{value?.scores?.home}</Badge>
+                                            <Badge size="xl">{value?.scores?.away}</Badge>
+                                        </Stack>
+                                        {/* <Image mr={5} src={value?.tournament?.logo} height={25} style={{ objectFit: 'contain' }}/>
                                 <Box>{value?.tournament?.name}</Box> */}
-                                </Box>
-                                
-                               
-                                
-                            </Paper></Link>
+                                    </Box>
+
+
+
+                                </Paper></Link>
 
 
                         </div>
