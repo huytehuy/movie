@@ -139,7 +139,7 @@ const DetailMovie = () => {
 
       </Box>
       {dataIframe && <Box style={{ marginTop: 10, height: '100%', width: '100%', display: 'flex', justifyContent: 'center' }}>
-        {isMobile ? <iframe width="100%" height="300" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe> : <iframe width="1280" height="720" src="https://embed2.streamc.xyz/embed.php?hash=09ad15bd2c279d70ffbb89a6a2102a34" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>}
+        {isMobile ? <iframe width="100%" height="300" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe> : <iframe width="1280" height="720" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>}
       </Box>}
       <div>
         {filmData?.episodes?.map((episode, index) => (
