@@ -66,7 +66,6 @@ function App() {
           <Link to="/">
             <img height='50' src={Logo} alt="logo" />
           </Link>
-          <div style={{ display: isMobile ? 'block' : 'none' }}></div>
         </div>
 
       </AppShell.Header>

@@ -1,4 +1,4 @@
-import { Button, LoadingOverlay } from "@mantine/core";
+import { Button, Grid, LoadingOverlay } from "@mantine/core";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { isMobile } from "react-device-detect";
@@ -48,8 +48,8 @@ const SportDetail = () => {
         <div style={{ display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
             <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
             {isMobile ? <iframe
-                width="360"
-                height="400"
+                width="100%"
+                height="300"
                 src={`https://xem.bdhub.xyz/v7/?link=${link}&is_live=0&theme_id=vebotv`}
                 frameBorder="0"
                 allowFullScreen
@@ -64,9 +64,11 @@ const SportDetail = () => {
             />}
 
             <div style={{ marginTop: 10 }}>
+                <Grid>
                 {data.map((value, index) => (
-                    <Button style={{ marginRight: 10 }} color={active == value.name ? '#1c3246' : 'blue'} key={index} onClick={() => handleButtonClick(value?.url, value?.name)}>{value.name}</Button>
+                    <Grid.Col key={index} span='content'><Button style={{ marginRight: 10 }} color={active == value.name ? '#1c3246' : 'blue'} key={index} onClick={() => handleButtonClick(value?.url, value?.name)}>{value.name}</Button></Grid.Col>
                 ))}
+                </Grid>
             </div>
 
         </div>)
