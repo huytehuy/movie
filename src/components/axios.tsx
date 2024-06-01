@@ -5,6 +5,7 @@ import { LoadingOverlay, Grid, Pagination } from '@mantine/core';
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { Category, CategoryName } from '../data/enumCategory';
 import SearchInput from './SearchData';
+import { Helmet } from 'react-helmet';
 
 const MyComponent = () => {
   const [data, setData] = useState<any[]>([]);
@@ -63,6 +64,10 @@ const MyComponent = () => {
   return (
     <div>
       <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+      <Helmet>
+        <title>{CategoryName[currentLocation as keyof typeof Category]}</title>
+        <meta property="og:title" content={CategoryName[currentLocation as keyof typeof Category]}/>
+      </Helmet>
       <SearchInput/>
       <h1 style={{ textAlign: 'center' }}>{CategoryName[currentLocation as keyof typeof Category]}</h1>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>

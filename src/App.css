@@ -2,3 +2,13 @@
   text-decoration: none!important;
   list-style: none;
 }
+.iframe-container {
+  width: 1280px;
+  height: 720px;
+}
+
+@media screen and (max-width: 1500px) {
+  .iframe-container {
+    width: 100%;
+  }
+}

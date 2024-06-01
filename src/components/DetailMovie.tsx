@@ -1,11 +1,12 @@
 import { Box, Button, Grid, LoadingOverlay, Text } from "@mantine/core";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom"
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import SearchInput from "./SearchData";
 import PlaceHolderImage from '../assets/800@3x.png'
 import { isMobile } from "react-device-detect";
+import { Helmet } from "react-helmet";
 interface FilmData {
   movie: {
     name: string;
@@ -48,6 +49,7 @@ const DetailMovie = () => {
   const [visible, setVisible] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [dataIframe, setDataIframe] = useState(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,9 +86,37 @@ const DetailMovie = () => {
     fetchData();
   }, [retryCount]);
 
-  // const handleButtonClick = () => {
+  useEffect(() => {
+    console.log(iframeRef)
+    const handleFullscreen = () => {
+      if (iframeRef.current) {
+        iframeRef.current.focus();
 
-  // };
+        // Ép kiểu để bỏ qua kiểm tra loại của TypeScript
+        const iframe: any = iframeRef.current;
+
+        if (iframe.requestFullscreen) {
+          iframe.requestFullscreen();
+        } else if (iframe.mozRequestFullScreen) {
+          iframe.mozRequestFullScreen();
+        } else if (iframe.webkitRequestFullscreen) {
+          iframe.webkitRequestFullscreen();
+        } else if (iframe.msRequestFullscreen) {
+          iframe.msRequestFullscreen();
+        }
+      }
+    };
+
+    if (iframeRef.current) {
+      iframeRef.current.addEventListener('load', handleFullscreen);
+    }
+
+    return () => {
+      if (iframeRef.current) {
+        iframeRef.current.removeEventListener('load', handleFullscreen);
+      }
+    };
+  }, [dataIframe]);
 
   const handleButtonClick = (url: any) => {
     setDataIframe(url);
@@ -98,6 +128,11 @@ const DetailMovie = () => {
 
   return (
     <Box style={{ display: 'flex', alignItems: "center", flexDirection: 'column' }}>
+      <Helmet>
+        <title>{filmData?.movie?.name}</title>
+        <meta property="og:image" content={filmData?.movie?.thumb_url} />
+        <meta property="og:title" content={filmData?.movie?.name} />
+      </Helmet>
       <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
       <SearchInput />
       <Text mt={20} mb={10} fw={700} c="red">Nếu xem phim bị lag, vui lòng đổi máy chủ khác</Text>
@@ -139,7 +174,7 @@ const DetailMovie = () => {
 
       </Box>
       {dataIframe && <Box style={{ marginTop: 10, height: '100%', width: '100%', display: 'flex', justifyContent: 'center' }}>
-        {isMobile ? <iframe width="100%" height="300" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe> : <iframe width="1280" height="720" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>}
+        {isMobile ? <iframe ref={iframeRef} width="100%" height="300" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe> : <iframe ref={iframeRef} width="1280" height="720" src={dataIframe} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen></iframe>}
       </Box>}
       <div>
         {filmData?.episodes?.map((episode, index) => (

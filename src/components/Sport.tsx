@@ -1,6 +1,7 @@
 import { Badge, Box, LoadingOverlay, Paper, Stack, Text, Image } from "@mantine/core";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 
 interface Match {
@@ -57,6 +58,9 @@ const SportComponnet = () => {
     return (
         <div>
             <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+            <Helmet>
+        <title>Trực tiếp bóng đá</title>
+      </Helmet>
             <Stack
                 h={300}
                 bg="var(--mantine-color-body)"
