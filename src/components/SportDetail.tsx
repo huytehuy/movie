@@ -35,7 +35,6 @@ const SportDetail = () => {
         };
         fetchData()
     }, [id])
-    console.log(data)
     const handleButtonClick = (url: any, name: any) => {
         setLink(url);
         setReloadIframe(true); // Set reloadIframe to true to reload the iframe
@@ -49,7 +48,6 @@ const SportDetail = () => {
     };
 
     useEffect(() => {
-        console.log(iframeRef)
         const handleFullscreen = () => {
             if (iframeRef.current) {
                 iframeRef.current.focus();

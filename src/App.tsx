@@ -6,11 +6,12 @@ import Logo from './assets/HUYTEHUY.png';
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
+import SearchInput from './components/SearchData';
 
 const data = [
   {
-    name: 'Phim đang hot',
-    link: 'phim_dang_hot'
+    name: 'Trang chủ',
+    link: ''
   },
   {
     name: 'Phim lẻ',
@@ -21,8 +22,8 @@ const data = [
     link: 'phim_bo'
   },
   {
-    name: 'Phim mới',
-    link: 'phim_moi'
+    name: 'Phim chiếu rạp',
+    link: 'phim_chieu_rap'
   },
   {
     name: 'Trực tiếp bóng đá',
@@ -66,6 +67,9 @@ function App() {
           <Link to="/">
             <img height='50' src={Logo} alt="logo" />
           </Link>
+          <div style={{marginLeft:150,display:'flex',justifyContent:'center',width:'100%'}}>
+          <SearchInput />
+          </div>
         </div>
 
       </AppShell.Header>

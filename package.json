@@ -10,12 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mantine/carousel": "^7.13.0",
     "@mantine/core": "^7.9.1",
     "@mantine/hooks": "^7.9.1",
     "@mantine/modals": "^7.9.1",
     "@mantine/notifications": "^7.9.1",
     "artplayer": "^5.1.1",
     "axios": "^1.6.7",
+    "embla-carousel-autoplay": "^7.1.0",
+    "embla-carousel-react": "^7.1.0",
     "install": "^0.13.0",
     "npm": "^10.5.0",
     "react": "^18.2.0",
@@ -24,8 +27,7 @@
     "react-helmet": "^6.1.0",
     "react-lazy-load-image-component": "^1.6.0",
     "react-player": "^2.16.0",
-    "react-router-dom": "^6.23.0",
-    "socket.io-client": "^4.7.5"
+    "react-router-dom": "^6.23.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",

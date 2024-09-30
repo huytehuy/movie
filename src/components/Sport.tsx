@@ -38,8 +38,6 @@ const SportComponnet = () => {
         return () => clearInterval(interval);
 
     }, [])
-
-    console.log(data)
     const liveMatches = data.filter(match => match?.is_live === true);
     liveMatches.sort((a, b) => {
         if (a.match_status === "live" && b.match_status !== "live") {
