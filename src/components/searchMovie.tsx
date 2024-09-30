@@ -14,7 +14,7 @@ const SearchData = () => {
       setVisible(true);
       setData([]);
       try {
-        const response = await axios.get(`https://motchilltv.my/api/searchmovie/${query}`, {
+        const response = await axios.get(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/searchmovie/${query}`, {
         });
         setData(response.data);
       } catch (error) {

@@ -38,13 +38,13 @@ const PhimLe = () => {
       setVisible(false)
     };
     if (currentLocation == Category.phim_chieu_rap) {
-      fetchData(`https://motchilltv.my/api/search?categoryId&countryId&typeRaw&year&orderBy=UpdateOn&isChieuRap=true&search&pageNumber=${pagePresent}`);
+      fetchData(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/search?categoryId&countryId&typeRaw&year&orderBy=UpdateOn&isChieuRap=true&search&pageNumber=${pagePresent}`);
     }
     else if (currentLocation == Category.phim_le) {
-      fetchData(`https://motchilltv.my/api/search?typeRaw=single&year&orderBy=UpdateOn&search&pageNumber=${pagePresent}`)
+      fetchData(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/search?typeRaw=single&year&orderBy=UpdateOn&search&pageNumber=${pagePresent}`)
     }
     else if (currentLocation == Category.phim_bo) {
-      fetchData(`https://motchilltv.my/api/search?typeRaw=series&year&orderBy=UpdateOn&search&pageNumber=${pagePresent}`)
+      fetchData(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/search?typeRaw=series&year&orderBy=UpdateOn&search&pageNumber=${pagePresent}`)
     }
   }, [pagePresent, currentLocation,retryCount]);
   return (

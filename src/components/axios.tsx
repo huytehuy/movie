@@ -9,7 +9,7 @@ import { Carousel } from '@mantine/carousel';
 import '@mantine/carousel/styles.css';
 
 const MyComponent = () => {
-  const API = "https://motchilltv.my/api/moviehomepage";
+  const API = "https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/moviehomepage";
   const [data, setData] = useState<any[]>([]);
   const [visible, setVisible] = useState(true);
   const location = useLocation();

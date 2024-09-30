@@ -53,7 +53,7 @@ const DetailMovie = () => {
     const fetchData = async () => {
       setVisible(true);
       try {
-        const response = await axios.get(`https://motchilltv.my/api/movie/${id}`);
+        const response = await axios.get(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/movie/${id}`);
         setFilmData(response?.data);
         setMovieId(response?.data?.movie?.Id);
       } catch (error) {
@@ -158,7 +158,7 @@ const DetailMovie = () => {
         {filmData?.movie?.Episodes?.filter((episode:any)=>episode.Status==true).map((episode, index) => (
           <Grid.Col key={index} span='content'>
             <Button 
-              onClick={() => {setEpisodeId(episode.Id);handleButtonClick(`https://motchilltv.my/api/play/get?movieId=${movieId}&episodeId=${episode.Id}`, index)}} 
+              onClick={() => {setEpisodeId(episode.Id);handleButtonClick(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/play/get?movieId=${movieId}&episodeId=${episode.Id}`, index)}} 
               color={episodeId === episode.Id ? '#1c3246' : 'blue'}
               loading={buttonLoading[index]} // Hiển thị loading cho nút
             >
