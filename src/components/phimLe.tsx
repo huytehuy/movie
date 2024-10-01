@@ -27,24 +27,26 @@ const PhimLe = () => {
       setData([])
       try {
         const response = await axios.get(apiFirst);
-          setPageCount(response.data.Pagination);
-          setData(response.data.Records)
+          setPageCount(response?.data?.paginate);
+          setData(response?.data?.items)
       } catch (error) {
         console.error('Error fetching data:', error);
+        if (retryCount <= 2) {
         setTimeout(() => {
           setRetryCount(retryCount + 1);
         }, 1000);
       }
+      }
       setVisible(false)
     };
-    if (currentLocation == Category.phim_chieu_rap) {
-      fetchData(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/search?categoryId&countryId&typeRaw&year&orderBy=UpdateOn&isChieuRap=true&search&pageNumber=${pagePresent}`);
+    if (currentLocation == Category.phim_dang_chieu) {
+      fetchData(`https://phim.nguonc.com/api/films/danh-sach/phim-dang-chieu?page=${pagePresent}`);
     }
     else if (currentLocation == Category.phim_le) {
-      fetchData(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/search?typeRaw=single&year&orderBy=UpdateOn&search&pageNumber=${pagePresent}`)
+      fetchData(`https://phim.nguonc.com/api/films/danh-sach/phim-le?page=${pagePresent}`)
     }
     else if (currentLocation == Category.phim_bo) {
-      fetchData(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/search?typeRaw=series&year&orderBy=UpdateOn&search&pageNumber=${pagePresent}`)
+      fetchData(`https://phim.nguonc.com/api/films/danh-sach/phim-bo?page=${pagePresent}`)
     }
   }, [pagePresent, currentLocation,retryCount]);
   return (
@@ -58,17 +60,17 @@ const PhimLe = () => {
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
         <Grid>
           {data?.map((item, index) => (
-            <Grid.Col span={{ base: 6, md: 6, lg: 3 }}>
+            <Grid.Col span={{ base: 6, md: 6, lg: 2 }}>
               <div key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} >
-                <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item.Link} className=''>
-                  <LazyLoadImage height={250} src={item.AvatarImageThumb} alt='image' />
-                  <div>{item.Name}</div>
+                <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item.slug} className=''>
+                  <LazyLoadImage height={250} src={item.thumb_url} alt='image' />
+                  <div>{item.name}</div>
                 </Link>
               </div>
             </Grid.Col>
           ))}
         </Grid>
-        <Pagination style={{marginTop:15}} total={pageCount?.PageCount} onChange={setPagePresent} siblings={5} defaultValue={1} value={pagePresent} />
+        <Pagination style={{marginTop:15}} total={pageCount?.total_page} onChange={setPagePresent} siblings={5} defaultValue={1} value={pagePresent} />
       </div>
     </div>
   );

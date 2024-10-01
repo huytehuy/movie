@@ -22,8 +22,8 @@ const data = [
     link: 'phim_bo'
   },
   {
-    name: 'Phim chiếu rạp',
-    link: 'phim_chieu_rap'
+    name: 'Phim đang chiếu',
+    link: 'phim_dang_chieu'
   },
   {
     name: 'Trực tiếp bóng đá',
@@ -42,7 +42,7 @@ function App() {
   }, [location]);
 
   const items = data.map((item, index) => (
-    <Link to={`/${item.link}`}>
+    <Link to={`/${item.link}`} key={index}>
       <NavLink
         key={item.name}
         active={index === active}
@@ -67,7 +67,7 @@ function App() {
           <Link to="/">
             <img height='50' src={Logo} alt="logo" />
           </Link>
-          <div style={{marginLeft:150,display:'flex',justifyContent:'center',width:'100%'}}>
+          <div style={{marginLeft:isMobile ?150:0,display:'flex',justifyContent:'center',width:'100%'}}>
           <SearchInput />
           </div>
         </div>

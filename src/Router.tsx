@@ -12,7 +12,7 @@ function Router() {
       <Route path="/" element={<MyComponent/>} />
       <Route path="/phim_le" element={<PhimLe />} />
       <Route path="/phim_bo" element={<PhimLe />} />
-      <Route path="/phim_chieu_rap" element={<PhimLe />} />
+      <Route path="/phim_dang_chieu" element={<PhimLe />} />
       <Route path="/detail/:id" element={<DetailMovie />} />
       <Route path="/search/:id" element={<SearchData/>} />
       <Route path="/sport" element={<SportComponnet/>} />

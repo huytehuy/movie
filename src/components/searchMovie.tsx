@@ -14,9 +14,9 @@ const SearchData = () => {
       setVisible(true);
       setData([]);
       try {
-        const response = await axios.get(`https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/searchmovie/${query}`, {
+        const response = await axios.get(`https://phim.nguonc.com/api/films/search?keyword=${query}`, {
         });
-        setData(response.data);
+        setData(response?.data.items);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -35,13 +35,13 @@ const SearchData = () => {
               {data.map((item, index) => (
                 <Grid.Col span={{ base: 6, md: 6, lg: 3 }}>
                   <div key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} >
-                    <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item.Link}>
-                      <LazyLoadImage src={item.AvatarImageThumb|| PlaceHolderImage }
+                    <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item.slug}>
+                      <LazyLoadImage src={item.thumb_url|| PlaceHolderImage }
                         height={250}
                         alt="Image Alt"
                         placeholderSrc={PlaceHolderImage}
                       />
-                      <div>{item.Name}</div>
+                      <div>{item.name}</div>
                     </Link>
                   </div>
                 </Grid.Col>

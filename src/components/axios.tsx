@@ -1,35 +1,40 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Link, useLocation } from 'react-router-dom';
-import { LoadingOverlay, Image } from '@mantine/core';
-import { Category, CategoryName } from '../data/enumCategory';
-import { Helmet } from 'react-helmet';
-import PlaceHolderImage from '../assets/800@3x.png';
-import { Carousel } from '@mantine/carousel';
-import '@mantine/carousel/styles.css';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Link} from "react-router-dom";
+import { LoadingOverlay, Image } from "@mantine/core";
+import { Helmet } from "react-helmet";
+import PlaceHolderImage from "../assets/800@3x.png";
+import { Carousel } from "@mantine/carousel";
+import "@mantine/carousel/styles.css";
 
 const MyComponent = () => {
-  const API = "https://cors-anywhere.herokuapp.com/https://motchilltv.my/api/moviehomepage";
+  const APIHOT = "https://api.npoint.io/4d374d81c2a7f88140a4";
+  const APIDANGCHIEU = "https://phim.nguonc.com/api/films/danh-sach";
   const [data, setData] = useState<any[]>([]);
+  const [dataDangChieu, setDataDangchieu] = useState<any[]>([]);
+  const [dataPhimLe, setDataPhimLe] = useState<any[]>([]);
+  const [dataPhimBo, setDataPhimBo] = useState<any[]>([]);
+  const [dataTvShows, setDataTvShows] = useState<any[]>([]);
   const [visible, setVisible] = useState(true);
-  const location = useLocation();
-  const [currentLocation, setCurrentLocation] = useState('');
   const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    const currentPath = location.pathname.substring(1);
-    setCurrentLocation(currentPath);
-  }, [location]);
-
-  useEffect(() => {
-    const fetchData = async (apiFirst: string) => {
+    const fetchData = async (APIHOT: string,APIDANGCHIEU: string) => {
       setVisible(true);
       setData([]);
       try {
-        const response = await axios.get(apiFirst);
+        const response = await axios.get(APIHOT);
         setData(response.data);
+        const response2 = await axios.get(`${APIDANGCHIEU}/phim-dang-chieu?page=1`);
+        setDataDangchieu(response2.data.items);
+        const response3 = await axios.get(`${APIDANGCHIEU}/phim-le?page=1`);
+        setDataPhimLe(response3.data.items);
+        const response4 = await axios.get(`${APIDANGCHIEU}/phim-bo?page=1`);
+        setDataPhimBo(response4.data.items);
+        const response5 = await axios.get(`${APIDANGCHIEU}/tv-shows?page=1`);
+        setDataTvShows(response5.data.items);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
         if (retryCount <= 2) {
           setTimeout(() => {
             setRetryCount(retryCount + 1);
@@ -38,51 +43,267 @@ const MyComponent = () => {
       }
       setVisible(false);
     };
-    fetchData(API);
-  }, [currentLocation, retryCount]);
+    fetchData(APIHOT,APIDANGCHIEU);
+  }, [retryCount]);
+
 
   return (
     <div>
-      <LoadingOverlay visible={visible} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
-      <Helmet>
-        <title>{CategoryName[currentLocation as keyof typeof Category]}</title>
-        <meta property="og:title" content={CategoryName[currentLocation as keyof typeof Category]} />
+      <LoadingOverlay
+        visible={visible}
+        zIndex={1000}
+        overlayProps={{ radius: "sm", blur: 2 }}
+      />
+        <Helmet>
+        <title>Huytehuy Movies</title>
+        <meta property="og:title" content="Huytehuy Movies"/>
       </Helmet>
-      {data.map((item, index) => {
-        const validProducts = item.Products.filter((product: any) => product.AvatarImageThumb && product.Name);
+      <div>
+      <h1 style={{ textAlign: "center" }}>Phim đang HOT</h1>
+      <Carousel
+        slideGap="md"
+        loop
+        align="start"
+        slidesToScroll={2}
+        nextControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+        previousControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+      >
+        {data.map((item, index) => {
+          return (
+            
+            <div key={index}>
+                <Carousel.Slide key={index}>
+                  <Link
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                    to={"/detail/" + item.slug}
+                  >
+                    <Image
+                      h={250}
+                      fit="contain"
+                      w="auto"
+                      src={
+                        `http://img.ophim1.com/uploads/movies/${item.thumb_url}` ||
+                        PlaceHolderImage
+                      }
+                      alt="image"
+                      radius="md"
+                    />
+                    <div>{item.name}</div>
+                  </Link>
+                </Carousel.Slide>
+            </div>
+          );
+        })}
+      </Carousel>
+      </div>
 
-        return (
-          <div key={index}>
-            {validProducts.length > 0 && ( // Render title only if there are valid products
-              <h1 style={{ textAlign: 'center' }}>{item.Title}</h1>
-            )}
-            {validProducts.length > 0 ? ( // Check if there are valid products
-              <Carousel
-                slideSize="20%"
-                slideGap="md"
-                loop
-                align="start"
-                slidesToScroll={2}
-                nextControlProps={{
-                  style: { backgroundColor: '#fff' }
-                }}
-                previousControlProps={{
-                  style: { backgroundColor: '#fff' }
-                }}
-              >
-                {validProducts.map((item2: any, index2: number) => (
-                  <Carousel.Slide key={index2}>
-                    <Link style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }} to={"/detail/" + item2.Link}>
-                      <Image h={250} fit='contain' w='auto' src={item2.AvatarImageThumb || PlaceHolderImage} alt='image' radius='md' />
-                      <div>{item2.Name}</div>
-                    </Link>
-                  </Carousel.Slide>
-                ))}
-              </Carousel>
-            ) : ""}
-          </div>
-        );
-      })}
+      <div>
+      <h1 style={{ textAlign: "center" }}>Phim đang chiếu</h1>
+      <Carousel
+        slideGap="md"
+        loop
+        align="start"
+        slidesToScroll={2}
+        nextControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+        previousControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+      >
+        {dataDangChieu.map((item, index) => {
+          return (
+            
+            <div key={index}>
+                <Carousel.Slide key={index}>
+                  <Link
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                    to={"/detail/" + item.slug}
+                  >
+                    <Image
+                      h={250}
+                      fit="contain"
+                      w="auto"
+                      src={
+                        item.thumb_url ||
+                        PlaceHolderImage
+                      }
+                      alt="image"
+                      radius="md"
+                    />
+                    <div>{item.name}</div>
+                  </Link>
+                </Carousel.Slide>
+            </div>
+          );
+        })}
+      </Carousel>
+      </div>
+
+      <div>
+      <h1 style={{ textAlign: "center" }}>Phim lẻ</h1>
+      <Carousel
+        slideGap="md"
+        loop
+        align="start"
+        slidesToScroll={2}
+        nextControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+        previousControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+      >
+        {dataPhimLe.map((item, index) => {
+          return (
+            
+            <div key={index}>
+                <Carousel.Slide key={index}>
+                  <Link
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                    to={"/detail/" + item.slug}
+                  >
+                    <Image
+                      h={250}
+                      fit="contain"
+                      w="auto"
+                      src={
+                        item.thumb_url ||
+                        PlaceHolderImage
+                      }
+                      alt="image"
+                      radius="md"
+                    />
+                    <div>{item.name}</div>
+                  </Link>
+                </Carousel.Slide>
+            </div>
+          );
+        })}
+      </Carousel>
+      </div>
+
+      <div>
+      <h1 style={{ textAlign: "center" }}>Phim bộ</h1>
+      <Carousel
+        slideGap="md"
+        loop
+        align="start"
+        slidesToScroll={2}
+        nextControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+        previousControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+      >
+        {dataPhimBo.map((item, index) => {
+          return (
+            
+            <div key={index}>
+                <Carousel.Slide key={index}>
+                  <Link
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                    to={"/detail/" + item.slug}
+                  >
+                    <Image
+                      h={250}
+                      fit="contain"
+                      w="auto"
+                      src={
+                        item.thumb_url ||
+                        PlaceHolderImage
+                      }
+                      alt="image"
+                      radius="md"
+                    />
+                    <div>{item.name}</div>
+                  </Link>
+                </Carousel.Slide>
+            </div>
+          );
+        })}
+      </Carousel>
+      </div>
+
+      <div>
+      <h1 style={{ textAlign: "center" }}>TV Shows</h1>
+      <Carousel
+        slideGap="md"
+        loop
+        align="start"
+        slidesToScroll={2}
+        nextControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+        previousControlProps={{
+          style: { backgroundColor: "#fff" },
+        }}
+      >
+        {dataTvShows.map((item, index) => {
+          return (
+            
+            <div key={index}>
+                <Carousel.Slide key={index}>
+                  <Link
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                    to={"/detail/" + item.slug}
+                  >
+                    <Image
+                      h={250}
+                      fit="contain"
+                      w="auto"
+                      src={
+                        item.thumb_url ||
+                        PlaceHolderImage
+                      }
+                      alt="image"
+                      radius="md"
+                    />
+                    <div>{item.name}</div>
+                  </Link>
+                </Carousel.Slide>
+            </div>
+          );
+        })}
+      </Carousel>
+      </div>
+
+
     </div>
   );
 };
