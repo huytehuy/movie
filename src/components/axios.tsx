@@ -9,7 +9,7 @@ import "@mantine/carousel/styles.css";
 
 const MyComponent = () => {
   const APIHOT = "https://api.npoint.io/4d374d81c2a7f88140a4";
-  const APIDANGCHIEU = "https://phim.nguonc.com/api/films/danh-sach";
+  const APIDANGCHIEU = "https://phim.nguonc.com/api/films/danh-sach" ;
   const [data, setData] = useState<any[]>([]);
   const [dataDangChieu, setDataDangchieu] = useState<any[]>([]);
   const [dataPhimLe, setDataPhimLe] = useState<any[]>([]);
