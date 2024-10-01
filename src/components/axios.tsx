@@ -92,7 +92,7 @@ const MyComponent = () => {
                       fit="contain"
                       w="auto"
                       src={
-                        `http://img.ophim1.com/uploads/movies/${item?.thumb_url}` ||
+                        `https://ophim16.cc/_next/image?url=http%3A%2F%2Fimg.ophim1.com%2Fuploads%2Fmovies%2F${item.thumb_url}&w=192&q=75` ||
                         PlaceHolderImage
                       }
                       alt="image"
