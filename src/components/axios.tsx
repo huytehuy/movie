@@ -21,18 +21,17 @@ const MyComponent = () => {
   useEffect(() => {
     const fetchData = async (APIHOT: string,APIDANGCHIEU: string) => {
       setVisible(true);
-      setData([]);
       try {
         const response = await axios.get(APIHOT);
-        setData(response.data);
+        setData(response?.data);
         const response2 = await axios.get(`${APIDANGCHIEU}/phim-dang-chieu?page=1`);
-        setDataDangchieu(response2.data.items);
+        setDataDangchieu(response2?.data?.items);
         const response3 = await axios.get(`${APIDANGCHIEU}/phim-le?page=1`);
-        setDataPhimLe(response3.data.items);
+        setDataPhimLe(response3?.data?.items);
         const response4 = await axios.get(`${APIDANGCHIEU}/phim-bo?page=1`);
-        setDataPhimBo(response4.data.items);
+        setDataPhimBo(response4?.data?.items);
         const response5 = await axios.get(`${APIDANGCHIEU}/tv-shows?page=1`);
-        setDataTvShows(response5.data.items);
+        setDataTvShows(response5?.data?.items);
       } catch (error) {
         console.error("Error fetching data:", error);
         if (retryCount <= 2) {
@@ -61,6 +60,7 @@ const MyComponent = () => {
       <div>
       <h1 style={{ textAlign: "center" }}>Phim đang HOT</h1>
       <Carousel
+      slideSize={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
         slideGap="md"
         loop
         align="start"
@@ -92,7 +92,7 @@ const MyComponent = () => {
                       fit="contain"
                       w="auto"
                       src={
-                        `http://img.ophim1.com/uploads/movies/${item.thumb_url}` ||
+                        `http://img.ophim1.com/uploads/movies/${item?.thumb_url}` ||
                         PlaceHolderImage
                       }
                       alt="image"

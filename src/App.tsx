@@ -62,15 +62,35 @@ function App() {
       padding="md"
     >
       <AppShell.Header>
-        <div style={{ display: 'flex', justifyContent: isMobile ? 'space-between' : 'flex-start', alignItems: 'center', height: '100%', paddingLeft: 10, paddingRight: 10 }}>
+        {/* <div style={{ display: 'flex', justifyContent: isMobile ? 'space-between' : 'flex-start', alignItems: 'center', height: '100%', paddingLeft: 10, paddingRight: 10 }}>
           <Burger size="md" display={isMobile ? 'block' : 'none'} opened={opened} onClick={toggle} aria-label="Toggle navigation" />
           <Link to="/">
             <img height='50' src={Logo} alt="logo" />
           </Link>
-          <div style={{marginLeft:isMobile ?150:0,display:'flex',justifyContent:'center',width:'100%'}}>
-          <SearchInput />
+          <div style={{ marginLeft: isMobile ? 0 : 150, display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <SearchInput />
           </div>
-        </div>
+        </div> */}
+        {isMobile ?
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%', paddingLeft: 10, paddingRight: 10 }}>
+            <Burger size="md" display={'block'} opened={opened} onClick={toggle} aria-label="Toggle navigation" />
+
+            <div style={{ paddingRight:20,paddingLeft:20,marginLeft: 0, display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <SearchInput />
+            </div>
+            <Link to="/">
+              <img height='50' src={Logo} alt="logo" />
+            </Link>
+        </div> :
+          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', height: '100%', paddingLeft: 10, paddingRight: 10 }}>
+            <Burger size="md" display='none' opened={opened} onClick={toggle} aria-label="Toggle navigation" />
+            <Link to="/">
+              <img height='50' src={Logo} alt="logo" />
+            </Link>
+            <div style={{ marginLeft: 150, display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <SearchInput />
+            </div>
+          </div>}
 
       </AppShell.Header>
       <AppShell.Navbar p="md">
