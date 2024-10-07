@@ -76,11 +76,12 @@ const DetailMovie = () => {
     <Box
       style={{ display: "flex", alignItems: "center", flexDirection: "column" }}
     >
-      <Helmet>
-        <title>{filmData?.name || "Loading..."}</title>
-        <meta property="og:image" content={filmData?.thumb_url} />
-        <meta property="og:title" content={filmData?.name} />
+      {filmData&&<Helmet>
+        <title>{filmData.name}</title>
+        <meta property="og:image" content={filmData.thumb_url} />
+        <meta property="og:title" content={filmData.name} />
       </Helmet>
+}
       <LoadingOverlay
         visible={visible}
         zIndex={1000}
