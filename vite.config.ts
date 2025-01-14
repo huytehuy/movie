@@ -8,9 +8,6 @@ export default defineConfig({
   host: true,
   },
   build: {
-    rollupOptions: {
-      external: ['embla-carousel-react'],
-    },
     chunkSizeWarningLimit: 1000, // Increase limit to 1000 kB
   },
 })
