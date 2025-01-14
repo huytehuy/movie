@@ -1,7 +1,7 @@
 {
-  "name": "vite-project",
+  "name": "huytehuy-movie",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,15 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mantine/carousel": "^7.13.0",
-    "@mantine/core": "^7.9.1",
-    "@mantine/hooks": "^7.9.1",
-    "@mantine/modals": "^7.9.1",
-    "@mantine/notifications": "^7.9.1",
-    "artplayer": "^5.1.1",
+    "@mantine/carousel": "^7.16.0",
+    "@mantine/core": "^7.16.0",
+    "@mantine/hooks": "^7.16.0",
+    "@mantine/modals": "^7.16.0",
+    "@mantine/notifications": "^7.16.0",
+    "@tabler/icons-react": "^3.28.1",
     "axios": "^1.6.7",
-    "embla-carousel-autoplay": "^7.1.0",
-    "embla-carousel-react": "^7.1.0",
+    "firebase": "^11.1.0",
     "install": "^0.13.0",
     "npm": "^10.5.0",
     "react": "^18.2.0",
