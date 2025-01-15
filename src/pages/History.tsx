@@ -6,6 +6,7 @@ import { Card, Text, Stack, Loader, Button, Grid, Flex } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { Helmet } from 'react-helmet';
 
 interface HistoryItem {
   id: string;
@@ -88,10 +89,12 @@ function History() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Watch History</h1>
-
+      <h1 className="text-2xl font-bold mb-6">Lịch sử xem phim</h1>
+<Helmet>
+  <title>Lịch sử xem phim</title>
+</Helmet>
       {history.length === 0 ? (
-        <Text c="dimmed">No watch history found</Text>
+        <Text c="dimmed">Không có lịch sử xem phim</Text>
       ) : (
         <Grid>
           {history.map((item) => (
@@ -99,18 +102,18 @@ function History() {
                 <Card key={item.id} shadow="sm" padding="lg" radius="md" withBorder>
                   <Stack>
                   <Flex justify="center" align="center" direction="column">
-                  <LazyLoadImage src={item.image} alt={item?.filmName} width={100} height="auto" />
+                  <LazyLoadImage style={{objectFit:"cover", height:"150px", width:"auto", borderRadius:"8px"}} src={item.image} alt={item?.filmName} />
                   <Text fw={500} size="lg">{item.filmName}</Text>
                       </Flex>
                       
                     <Text size="sm" c="dimmed">
-                      Episode: {item.episodeName}
+                      Tập: {item.episodeName}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      Server: {item.serverName}
+                      Định dạng: {item.serverName}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      Watched: {item.timestamp.toLocaleString()}
+                      Xem lần cuối: {item.timestamp.toLocaleString()}
                     </Text>
                     <Button
                       variant="light"
@@ -120,7 +123,7 @@ function History() {
                       radius="md"
                       onClick={() => handleWatchAgain(item.filmId, item.serverName, item.episodeName)}
                     >
-                      Watch Again
+                      Xem tiếp
                     </Button>
                   </Stack>
                 </Card>

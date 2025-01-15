@@ -10,6 +10,7 @@ import SearchInput from "./components/SearchData";
 import GoogleLogin from "./components/Login/Google";
 import React from "react";
 import { auth } from "./firebase/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 
 const data = [
   {
@@ -36,13 +37,31 @@ const data = [
 function App() {
   const [opened, { toggle }] = useDisclosure();
   const [active, setActive] = useState(0);
+  const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    const currentPath = location.pathname.substring(1); // Remove the leading slash
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      setAuthChecked(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const currentPath = location.pathname.substring(1);
     const activeIndex = data.findIndex((item) => item.link === currentPath);
     setActive(activeIndex >= 0 ? activeIndex : -1);
   }, [location]);
+
+  if (!authChecked) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingOverlay visible={true} />
+      </div>
+    );
+  }
+
   const items = data.map((item, index) => (
     <Link to={`/${item.link}`} key={index}>
       <NavLink

@@ -99,7 +99,7 @@ function GoogleLogin() {
                 color="blue"
                 fullWidth
               >
-                Watch History
+                Lịch sử xem phim
               </Button>
             </Menu.Item>
             <Menu.Item>
@@ -109,7 +109,7 @@ function GoogleLogin() {
                 loading={isLoading}
                 fullWidth
               >
-                Logout
+                Đăng xuất
               </Button>
             </Menu.Item>
           </Menu.Dropdown>
