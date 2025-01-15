@@ -1,11 +1,14 @@
 import { Badge, Box, Button, Grid, LoadingOverlay } from "@mantine/core";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import PlaceHolderImage from "../assets/800@3x.png";
 import { isMobile } from "react-device-detect";
 import { Helmet } from "react-helmet";
+import { auth, db } from "../firebase/firebaseConfig";
+import { collection, addDoc, serverTimestamp, updateDoc, getDocs, where, query } from 'firebase/firestore';
+import { notifications } from "@mantine/notifications";
 
 interface FilmData {
   name: string;
@@ -25,9 +28,11 @@ interface FilmData {
     }[];
   }[];
 }
-
 const DetailMovie = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const type = searchParams.get('type');
+  const episode = searchParams.get('episode');
   const [filmData, setFilmData] = useState<FilmData | null>(null);
   const [visible, setVisible] = useState(true);
   const [dataIframe, setDataIframe] = useState<string | null>(null);
@@ -41,27 +46,124 @@ const DetailMovie = () => {
     const fetchData = async () => {
       setVisible(true);
       try {
+        const actualId = id?.replace('.tsx', '');
         const response = await axios.get(
-          `https://phim.nguonc.com/api/film/${id}`
+          `https://phim.nguonc.com/api/film/${actualId}`
         );
         setFilmData(response.data.movie);
+        
+        if (response.data.movie.episodes) {
+          const targetServer = type 
+            ? response.data.movie.episodes.find((ep:any) => ep.server_name === type)
+            : '';
+  
+          if (targetServer) {
+            if (episode) {
+              if (episode === 'FULL') {
+                // Xử lý trường hợp FULL
+                const fullEpisode = targetServer.items[0];
+                setDataIframe(fullEpisode.embed);
+                await saveWatchHistory(fullEpisode, type);
+              } else {
+                const episodeNumber = parseInt(episode);
+                if (targetServer.items[episodeNumber - 1]) {
+                  const episodeData = targetServer.items[episodeNumber - 1];
+                setDataIframe(episodeData.embed);
+                // Lưu lịch sử khi load trực tiếp từ URL
+                await saveWatchHistory(episodeData, type);
+              }
+            }
+            } else {
+              const firstEpisode = targetServer.items[0];
+              setDataIframe(firstEpisode.embed);
+              // Lưu lịch sử cho episode đầu tiên
+              await saveWatchHistory(firstEpisode, type);
+            }
+          }
+        }
       } catch (error) {
         console.error("Error fetching film data:", error);
       } finally {
         setVisible(false);
       }
     };
-
+  
     fetchData();
-  }, [id]);
+  }, [id, episode, type]);
+
+  const saveWatchHistory = async (
+    item: { name: string; embed: string }, 
+    serverName: any
+  ) => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        notifications.show({
+          title: 'Warning',
+          message: 'Please login to save your watch history',
+          color: 'yellow'
+        });
+        return;
+      }
+  
+      const historyData = {
+        filmId: id || '',
+        filmName: filmData?.name || '',
+        episodeName: item.name,
+        serverName: serverName,
+        timestamp: serverTimestamp(),
+        lastWatched: new Date().toISOString(),
+        image: filmData?.thumb_url || '',
+      };
+  
+      const historyRef = collection(db, 'watch-history', userId, 'history');
+      const q = query(
+        historyRef, 
+        where('filmId', '==', id),
+        where('episodeName', '==', item.name),
+        where('serverName', '==', serverName)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        // Nếu chưa tồn tại thì thêm mới
+        await addDoc(historyRef, historyData);
+      } else {
+        // Kiểm tra thời gian
+        const lastDoc = querySnapshot.docs[0];
+        const lastTimestamp = lastDoc.data().timestamp?.toDate();
+        const now = new Date();
+        const hoursDiff = (now.getTime() - lastTimestamp.getTime()) / (1000 * 60 * 60);
+  
+        if (hoursDiff >= 1) {
+          // Nếu đã hơn 1 giờ, thêm bản ghi mới
+          await addDoc(historyRef, historyData);
+          console.log('New watch history saved after 1 hour');
+        } else {
+          // Nếu chưa đủ 1 giờ, cập nhật timestamp
+          const docRef = lastDoc.ref;
+          await updateDoc(docRef, {
+            timestamp: serverTimestamp(),
+            lastWatched: new Date().toISOString()
+          });
+          console.log('Watch history updated - less than 1 hour');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving watch history:', error);
+    }
+  };
 
   const changeServer = async (data: any, index: number, serverName: string) => {
-    setLoadingButton((prev) => ({ ...prev, [`${serverName}-${index}`]: true })); // Set loading cho nút đang nhấn
+    setLoadingButton((prev) => ({ ...prev, [`${serverName}-${index}`]: true }));
     try {
       setDataIframe(data.embed);
       if (iframeRef.current) {
         iframeRef.current.focus();
       }
+      // Lưu lịch sử xem
+      await saveWatchHistory(data, serverName);
     } finally {
       setTimeout(() => {
         setLoadingButton((prev) => ({
@@ -151,7 +253,11 @@ const DetailMovie = () => {
       <Grid style={{ paddingLeft: "15%", paddingRight: "15%", marginTop: 20 }}>
         {filmData?.episodes?.map((episode, index) => (
           <Grid.Col key={episode.Id} span={12}>
-            <Badge variant="dot" color="blue" radius="sm">
+            <Badge 
+              variant="dot" 
+              color={type === episode.server_name ? "green" : "blue"} 
+              radius="sm"
+            >
               {episode.server_name}
             </Badge>
             <Grid style={{ marginTop: 20 }} key={index}>

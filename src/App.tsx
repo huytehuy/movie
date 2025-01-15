@@ -8,8 +8,8 @@ import { useEffect, useState } from "react";
 import { isMobile } from "react-device-detect";
 import SearchInput from "./components/SearchData";
 import GoogleLogin from "./components/Login/Google";
-import { useUser } from "./context/UserContext";
 import React from "react";
+import { auth } from "./firebase/firebaseConfig";
 
 const data = [
   {
@@ -37,7 +37,6 @@ function App() {
   const [opened, { toggle }] = useDisclosure();
   const [active, setActive] = useState(0);
   const location = useLocation();
-  const { user } = useUser();
 
   useEffect(() => {
     const currentPath = location.pathname.substring(1); // Remove the leading slash
@@ -97,7 +96,7 @@ function App() {
             >
               <SearchInput />
             </div>
-            {user ? (
+            {auth.currentUser ? (
               <GoogleLogin />
             ) : (
               <Link to="/">
@@ -140,7 +139,7 @@ function App() {
         )}
       </AppShell.Header>
       <AppShell.Navbar p="md">
-        {isMobile ? user ? null :<GoogleLogin />  : null}
+        {isMobile ? auth.currentUser ? null :<GoogleLogin />  : null}
         <Box w={"100%"}>{items}</Box>
       </AppShell.Navbar>
       <AppShell.Main>

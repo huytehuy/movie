@@ -1,61 +1,127 @@
-// src/components/GoogleLogin.tsx
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../../firebase/firebaseConfig';
-import { Avatar, Button, Menu } from '@mantine/core';
+import { Avatar, Button, Loader, Menu } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { IconBrandGoogleFilled } from '@tabler/icons-react';
-import { useUser } from '../../context/UserContext';
-
-
+import { Link } from 'react-router-dom';
 
 function GoogleLogin() {
-    const { user, setUser } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthChecked(true);
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
+  }, []);
 
   const handleGoogleLogin = async () => {
+    setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' }); // Force account selection
+    provider.setCustomParameters({ prompt: 'select_account' });
+
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
+      await signInWithPopup(auth, provider);
+      notifications.show({
+        title: 'Success',
+        message: 'Logged in successfully',
+        color: 'green',
+      });
     } catch (error) {
       console.error('Error during Google login', error);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to login. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleLogout = async () => {
+    setIsLoading(true);
     try {
       await signOut(auth);
-      setUser(null);
-      localStorage.removeItem('user');
+      notifications.show({
+        title: 'Success',
+        message: 'Logged out successfully',
+        color: 'green',
+      });
     } catch (error) {
       console.error('Error during logout', error);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to logout. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  if (!authChecked) {
+    return (
+      <div className="flex justify-center items-center">
+        <Loader color="blue" size="sm" />
+      </div>
+    );
+  }
+
   return (
     <div>
-      {!user ? (
-        <Button onClick={handleGoogleLogin}>Login with Google <IconBrandGoogleFilled style={{marginLeft:5,marginRight:5}} size={14} /> to save progress</Button>
+      {currentUser ? (
+        <Menu shadow="md" width="fit-content">
+          <Menu.Target>
+            <Button h={50} variant="transparent">
+              <Avatar
+                src={currentUser.photoURL || ''}
+                color="cyan"
+                radius="xl"
+                alt={currentUser.displayName || 'User Avatar'}
+              />
+            </Button>
+          </Menu.Target>
+
+          <Menu.Dropdown>
+            <Menu.Divider />
+            <Menu.Item>
+              <Button
+                component={Link}
+                to="/history"
+                variant="light"
+                color="blue"
+                fullWidth
+              >
+                Watch History
+              </Button>
+            </Menu.Item>
+            <Menu.Item>
+              <Button
+                color="red"
+                onClick={handleLogout}
+                loading={isLoading}
+                fullWidth
+              >
+                Logout
+              </Button>
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       ) : (
-        <div>
-            <Menu shadow="md" width={"fit-content"}>
-                <Menu.Target>
-                    
-                    <Button h={50} variant='transparent' ><Avatar  src={user.photoURL} color="cyan" radius="xl" alt="User Avatar" /></Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                    <Menu.Item>
-                    <Button color='red' onClick={handleLogout}>Logout</Button>
-                    </Menu.Item>
-                </Menu.Dropdown>
-            </Menu>
-          {/* <h3>User Information</h3>
-          <p>Name: {user.displayName}</p>
-          <p>Email: {user.email}</p> */}
-          {/* <img src={user.photoURL} alt="User Avatar" />
-          <button onClick={handleLogout}>Logout</button> */}
-        </div>
+        <Button
+          onClick={handleGoogleLogin}
+          loading={isLoading}
+          leftSection={<IconBrandGoogleFilled size={14} />}
+        >
+          Login with Google to save progress
+        </Button>
       )}
     </div>
   );
