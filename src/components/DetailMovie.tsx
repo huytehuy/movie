@@ -59,7 +59,7 @@ const DetailMovie = () => {
   
           if (targetServer) {
             if (episode) {
-              if (episode === 'FULL') {
+              if (episode === 'FULL' || episode === 'full' || episode === 'Full') {
                 // Xử lý trường hợp FULL
                 const fullEpisode = targetServer.items[0];
                 setDataIframe(fullEpisode.embed);
@@ -132,23 +132,22 @@ const DetailMovie = () => {
       } else {
         // Kiểm tra thời gian
         const lastDoc = querySnapshot.docs[0];
-        const lastTimestamp = lastDoc.data().timestamp?.toDate();
-        const now = new Date();
-        const hoursDiff = (now.getTime() - lastTimestamp.getTime()) / (1000 * 60 * 60);
+        // const lastTimestamp = lastDoc.data().timestamp?.toDate();
+        // const now = new Date();
+        // const hoursDiff = (now.getTime() - lastTimestamp.getTime()) / (1000 * 60 * 60);
   
-        if (hoursDiff >= 1) {
-          // Nếu đã hơn 1 giờ, thêm bản ghi mới
-          await addDoc(historyRef, historyData);
-          console.log('New watch history saved after 1 hour');
-        } else {
+        // if (hoursDiff >= 1) {
+        //   // Nếu đã hơn 1 giờ, thêm bản ghi mới
+        //   await addDoc(historyRef, historyData);
+        //   console.log('New watch history saved after 1 hour');
+        // } else {
           // Nếu chưa đủ 1 giờ, cập nhật timestamp
           const docRef = lastDoc.ref;
           await updateDoc(docRef, {
             timestamp: serverTimestamp(),
             lastWatched: new Date().toISOString()
           });
-          console.log('Watch history updated - less than 1 hour');
-        }
+        // }
       }
     } catch (error) {
       console.error('Error saving watch history:', error);
