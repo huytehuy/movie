@@ -44,7 +44,7 @@ export interface WatchPartyState {
 const getApiUrl = () => {
     // In production, this should be the deployed backend URL
     // Examples: 'https://my-movie-app.onrender.com'
-    const url = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    const url = import.meta.env.VITE_API_URL || 'https://backend-movie-2tud.onrender.com/';
     return url.replace(/\/$/, '');
 };
 
