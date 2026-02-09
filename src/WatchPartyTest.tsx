@@ -7,18 +7,20 @@ export default function WatchPartyTest() {
     const [roomId, setRoomId] = useState(searchParams.get('room') || '');
     const [username, setUsername] = useState('User' + Math.floor(Math.random() * 1000));
     const [movieId] = useState('1');
+    const [videoUrl, setVideoUrl] = useState('https://vip.opstream10.com/20260202/32664_4e688af0/index.m3u8');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     // Update URL when roomId changes
     useEffect(() => {
         if (roomId) {
-            setSearchParams({ room: roomId });
+            setSearchParams({ room: roomId, video: videoUrl }); // Optional: store video in URL too
         } else {
             searchParams.delete('room'); // Clean up URL if room is left
+            // Keep video param if user wants to rejoin with same video?
             setSearchParams(searchParams);
         }
-    }, [roomId, setSearchParams]);
+    }, [roomId, setSearchParams, videoUrl]);
 
     // Lifted state: Single connection for Player
     const watchPartyState = useWatchParty(roomId, username, !roomId);
@@ -58,13 +60,23 @@ export default function WatchPartyTest() {
                 <div style={{ marginTop: '20px' }}>
                     <h2>Join or Create a Room</h2>
                     <div style={{ marginBottom: '20px' }}>
-                        <label>
+                        <label style={{ display: 'block', marginBottom: '10px' }}>
                             Username:
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                style={{ marginLeft: '10px', padding: '5px' }}
+                                style={{ marginLeft: '10px', padding: '5px', width: '200px' }}
+                            />
+                        </label>
+                        <label style={{ display: 'block', marginBottom: '10px' }}>
+                            Video URL (m3u8):
+                            <input
+                                type="text"
+                                value={videoUrl}
+                                onChange={(e) => setVideoUrl(e.target.value)}
+                                style={{ marginLeft: '10px', padding: '5px', width: '400px' }}
+                                placeholder="Enter .m3u8 link"
                             />
                         </label>
                     </div>
@@ -147,7 +159,7 @@ export default function WatchPartyTest() {
                             <WatchPartyPlayer
                                 roomId={roomId}
                                 username={username}
-                                videoUrl="https://vip.opstream10.com/20260202/32664_4e688af0/index.m3u8"
+                                videoUrl={videoUrl}
                                 existingState={watchPartyState}
                             />
                         </div>
