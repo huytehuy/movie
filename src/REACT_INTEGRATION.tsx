@@ -222,7 +222,7 @@ export const WatchPartyPlayer: React.FC<WatchPartyPlayerProps> = ({
     // Use existing state if provided, otherwise create new connection
     // We pass skipConnection=true if existingState is provided to avoid double connection
     const hookState = useWatchParty(roomId, username, !!existingState);
-    const { videoState, play, pause, seek, syncTime } = existingState || hookState;
+    const { videoState, play, pause, seek } = existingState || hookState;
 
     const [needsInteraction, setNeedsInteraction] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
