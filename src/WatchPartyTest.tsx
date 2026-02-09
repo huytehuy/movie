@@ -25,11 +25,24 @@ export default function WatchPartyTest() {
     // Lifted state: Single connection for Player
     const watchPartyState = useWatchParty(roomId, username, !roomId);
 
+    // Fetch room info if joining via URL
+    useEffect(() => {
+        if (roomId && !watchPartyState.connected) {
+            import('./REACT_INTEGRATION').then(mod => {
+                mod.getRoomInfo(roomId).then(info => {
+                    if (info.customVideoUrl) {
+                        setVideoUrl(info.customVideoUrl);
+                    }
+                }).catch(e => console.error("Could not fetch room info:", e));
+            });
+        }
+    }, [roomId]);
+
     const handleCreateRoom = async () => {
         setLoading(true);
         setError('');
         try {
-            const result = await createWatchPartyRoom(movieId, 'Test Party Room', username);
+            const result = await createWatchPartyRoom(movieId, 'Test Party Room', username, videoUrl); // Pass videoUrl
             console.log('Room created:', result);
             setRoomId(result.room.id);
         } catch (err: any) {
@@ -40,10 +53,20 @@ export default function WatchPartyTest() {
         }
     };
 
-    const handleJoinRoom = () => {
+    const handleJoinRoom = async () => {
         const inputRoomId = prompt('Enter Room ID:');
         if (inputRoomId) {
             setRoomId(inputRoomId);
+            // Fetch room info to get video URL
+            try {
+                const mod = await import('./REACT_INTEGRATION');
+                const info = await mod.getRoomInfo(inputRoomId);
+                if (info.customVideoUrl) {
+                    setVideoUrl(info.customVideoUrl);
+                }
+            } catch (e) {
+                console.error("Error fetching room info:", e);
+            }
         }
     };
 

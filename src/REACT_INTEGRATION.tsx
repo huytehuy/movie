@@ -391,7 +391,7 @@ export const WatchPartyPlayer: React.FC<WatchPartyPlayerProps> = ({
 };
 
 // 4. Example: Create Room API call
-export const createWatchPartyRoom = async (movieId: string, roomName: string, username: string) => {
+export const createWatchPartyRoom = async (movieId: string, roomName: string, username: string, customVideoUrl?: string) => {
     const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/api/rooms`, {
         method: 'POST',
@@ -402,6 +402,7 @@ export const createWatchPartyRoom = async (movieId: string, roomName: string, us
             movieId,
             roomName,
             username,
+            customVideoUrl,
         }),
     });
 
@@ -409,7 +410,19 @@ export const createWatchPartyRoom = async (movieId: string, roomName: string, us
         throw new Error('Failed to create room');
     }
 
-    return await response.json();
+    return response.json();
+};
+
+// 4.1 Example: Get Room Info API call
+export const getRoomInfo = async (roomId: string) => {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/api/rooms/${roomId}`);
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch room info');
+    }
+
+    return response.json();
 };
 
 // 5. Example: Get Movies API call
