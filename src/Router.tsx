@@ -20,7 +20,7 @@ function Router() {
       <Route path="/detail/:slug@:id" element={<DetailMovie />} />
       <Route path="/search/:id" element={<SearchData />} />
       <Route path="/history" element={<History />} />
-      <Route path="/watch-party-test" element={<WatchPartyTest />} />
+      <Route path="/watch-party" element={<WatchPartyTest />} />
       <Route path="*" element={<NotFound />} />
 
       {/* <Route path="/sport" element={<SportComponnet/>} />
