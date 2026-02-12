@@ -11,13 +11,15 @@ void main() async {
   // For now, I'll add a dummy check or just let it log an error but continue if possible,
   // but Firebase.initializeApp() usually crashes if config is missing on Android.
   // I will comment it out and add a TODO.
-  /*
+  // Initialize Firebase safely
   try {
+    // Only init if google-services.json is present (implied by successful build, but runtime check)
+    // Actually, on Android, if the file is missing at build time, the plugin might not even be registered.
+    // But we wrap in try-catch to prevent crash on launch if config is invalid.
     await Firebase.initializeApp();
   } catch (e) {
-    print("Firebase initialization failed: $e");
+    print("Warning: Firebase initialization failed. Auth features may not work. Error: $e");
   }
-  */
   
   // Try to init auth service (will handle fallback internally)
   await AuthService().init();
