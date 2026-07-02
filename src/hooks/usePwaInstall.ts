@@ -5,19 +5,32 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+const checkStandalone = () =>
+  window.matchMedia("(display-mode: standalone)").matches ||
+  // iOS Safari
+  (navigator as unknown as { standalone?: boolean }).standalone === true;
+
 /**
- * Bắt sự kiện beforeinstallprompt để hiện nút "Cài app".
- * Chỉ khả dụng khi chạy bản build (có service worker) và app chưa được cài.
+ * Trạng thái cài đặt PWA:
+ * - canPrompt: trình duyệt hỗ trợ prompt cài trực tiếp (Chrome/Edge/Android)
+ * - needsIosGuide: iOS không có prompt, phải hướng dẫn thủ công qua nút Chia sẻ
+ * - isStandalone: đang chạy trong app đã cài (ẩn nút cài)
  */
 export const usePwaInstall = () => {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(checkStandalone);
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
     };
-    const onInstalled = () => setInstallEvent(null);
+    const onInstalled = () => {
+      setInstallEvent(null);
+      setIsStandalone(true);
+    };
 
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
@@ -33,5 +46,10 @@ export const usePwaInstall = () => {
     setInstallEvent(null);
   };
 
-  return { canInstall: installEvent !== null, install };
+  return {
+    canPrompt: installEvent !== null,
+    needsIosGuide: isIos && !isStandalone,
+    isStandalone,
+    install,
+  };
 };

@@ -1,5 +1,4 @@
-import { ActionIcon, AppShell, Box, Burger, Group, LoadingOverlay, NavLink, Tooltip } from "@mantine/core";
-import { IconDownload } from "@tabler/icons-react";
+import { AppShell, Box, Burger, Group, LoadingOverlay, NavLink } from "@mantine/core";
 import Router from "./Router";
 import "@mantine/core/styles.css";
 import "@mantine/carousel/styles.css";
@@ -11,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import SearchInput from "./components/SearchInput";
 import GoogleLogin from "./components/Login/Google";
 import ThemeToggle from "./components/ThemeToggle";
-import { usePwaInstall } from "./hooks/usePwaInstall";
+import InstallPwaButton from "./components/InstallPwaButton";
 import { auth } from "./firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -27,7 +26,6 @@ function App() {
   const [opened, { toggle, close }] = useDisclosure();
   const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
-  const { canInstall, install } = usePwaInstall();
 
   useEffect(() => {
     if (!auth) {
@@ -66,7 +64,8 @@ function App() {
   return (
     <React.Suspense fallback={<LoadingOverlay visible />}>
       <AppShell
-        header={{ height: 64 }}
+        // Chừa chỗ cho status bar (pin/giờ) khi chạy PWA standalone
+        header={{ height: "calc(64px + env(safe-area-inset-top))" }}
         navbar={{
           width: 220,
           breakpoint: "sm",
@@ -74,8 +73,14 @@ function App() {
         }}
         padding="md"
       >
-        <AppShell.Header>
-          <Group h="100%" px="md" gap="sm" wrap="nowrap">
+        <AppShell.Header
+          style={{
+            paddingTop: "env(safe-area-inset-top)",
+            paddingLeft: "env(safe-area-inset-left)",
+            paddingRight: "env(safe-area-inset-right)",
+          }}
+        >
+          <Group h={64} px="md" gap="sm" wrap="nowrap">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Menu" />
             <Link to="/" style={{ display: "flex", alignItems: "center" }}>
               <img height={44} src={Logo} alt="Huytehuy Movies" />
@@ -83,19 +88,9 @@ function App() {
             <Box style={{ flex: 1, display: "flex", justifyContent: "center" }}>
               <SearchInput />
             </Box>
-            {canInstall && (
-              <Tooltip label="Cài đặt ứng dụng">
-                <ActionIcon
-                  variant="default"
-                  size="lg"
-                  radius="xl"
-                  onClick={install}
-                  aria-label="Cài đặt ứng dụng"
-                >
-                  <IconDownload size={18} />
-                </ActionIcon>
-              </Tooltip>
-            )}
+            <Box visibleFrom="xs">
+              <InstallPwaButton />
+            </Box>
             <ThemeToggle />
             <Box visibleFrom="sm">
               <GoogleLogin />
@@ -103,11 +98,20 @@ function App() {
           </Group>
         </AppShell.Header>
 
-        <AppShell.Navbar p="md">
+        <AppShell.Navbar
+          p="md"
+          style={{
+            paddingBottom: "calc(var(--mantine-spacing-md) + env(safe-area-inset-bottom))",
+            paddingLeft: "calc(var(--mantine-spacing-md) + env(safe-area-inset-left))",
+          }}
+        >
           <Box hiddenFrom="sm" mb="md">
             <GoogleLogin />
           </Box>
           <Box w="100%">{items}</Box>
+          <Box hiddenFrom="sm" mt="md">
+            <InstallPwaButton variant="full" />
+          </Box>
         </AppShell.Navbar>
 
         <AppShell.Main>
