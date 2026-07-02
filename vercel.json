@@ -1,6 +1,7 @@
 {
     "routes": [
         { "src": "/detail/([^?]+).*", "dest": "/api/detail-og?slug=$1" },
+        { "handle": "filesystem" },
         { "src": "/[^.]+", "dest": "/", "status": 200 }
     ]
 }

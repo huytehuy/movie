@@ -3,12 +3,16 @@
  * vào index.html cho các link /detail/* — để crawler của Zalo/Facebook/
  * Messenger (không chạy JavaScript) thấy đúng thông tin phim khi chia sẻ.
  *
- * Dữ liệu phim thử lần lượt: nguonc -> ophim (server Vercel có thể bị
- * Cloudflare của từng nguồn chặn nên cần dự phòng + User-Agent trình duyệt).
+ * Thứ tự nguồn dữ liệu (nguonc chặn IP datacenter của Vercel nên ophim đứng đầu):
+ * 1. ophim theo slug
+ * 2. nguonc theo slug
+ * 3. ophim search theo từ khóa từ slug (cứu phim lệch slug giữa 2 nguồn)
  */
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
+const OPHIM_IMG = "https://img.ophim.live/uploads/movies/";
 
 const escapeHtml = (text = "") =>
   String(text)
@@ -25,10 +29,32 @@ const fetchJson = async (url) => {
   return res.json();
 };
 
-/** Lấy {name, image, description} từ nguonc, lỗi thì thử ophim */
+const ophimImage = (file) =>
+  file ? (file.startsWith("http") ? file : `${OPHIM_IMG}${file}`) : undefined;
+
+/** Lấy {name, image, description} — thử lần lượt các nguồn */
 const fetchMovieMeta = async (slug) => {
   const errors = [];
 
+  // 1) ophim theo slug
+  try {
+    const data = await fetchJson(`https://ophim1.com/v1/api/phim/${slug}`);
+    const item = data?.data?.item;
+    if (item) {
+      return {
+        source: "ophim",
+        name: item.name,
+        image: ophimImage(item.poster_url || item.thumb_url),
+        description: (item.content || "").replace(/<[^>]*>/g, ""),
+        errors,
+      };
+    }
+    errors.push("ophim: no item in response");
+  } catch (e) {
+    errors.push(`ophim: ${e.message}`);
+  }
+
+  // 2) nguonc theo slug
   try {
     const data = await fetchJson(`https://phim.nguonc.com/api/film/${slug}`);
     const movie = data?.movie;
@@ -46,22 +72,33 @@ const fetchMovieMeta = async (slug) => {
     errors.push(`nguonc: ${e.message}`);
   }
 
+  // 3) ophim search theo từ khóa từ slug; chỉ nhận kết quả có slug
+  //    quan hệ tiền tố với slug cần tìm để không lấy nhầm phim khác
   try {
-    const data = await fetchJson(`https://ophim1.com/v1/api/phim/${slug}`);
-    const item = data?.data?.item;
-    if (item) {
-      const img = item.poster_url || item.thumb_url;
+    const keyword = slug.replace(/-/g, " ");
+    const search = (kw) =>
+      fetchJson(`https://ophim1.com/v1/api/tim-kiem?keyword=${encodeURIComponent(kw)}`);
+
+    let items = (await search(keyword))?.data?.items || [];
+    if (!items.length && / phan \d+$/.test(keyword)) {
+      items = (await search(keyword.replace(/ phan \d+$/, "")))?.data?.items || [];
+    }
+
+    const match = items.find(
+      (item) => slug.startsWith(item.slug) || item.slug.startsWith(slug)
+    );
+    if (match) {
       return {
-        source: "ophim",
-        name: item.name,
-        image: img ? `https://img.ophim.live/uploads/movies/${img}` : undefined,
-        description: (item.content || "").replace(/<[^>]*>/g, ""),
+        source: "ophim-search",
+        name: match.name,
+        image: ophimImage(match.poster_url || match.thumb_url),
+        description: undefined,
         errors,
       };
     }
-    errors.push("ophim: no item in response");
+    errors.push("ophim-search: no matching item");
   } catch (e) {
-    errors.push(`ophim: ${e.message}`);
+    errors.push(`ophim-search: ${e.message}`);
   }
 
   return { errors };
