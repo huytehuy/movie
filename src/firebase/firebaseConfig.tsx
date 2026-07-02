@@ -1,7 +1,7 @@
 // src/firebase/firebaseConfig.tsx
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { FirebaseApp, initializeApp } from 'firebase/app';
+import { Auth, getAuth } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'dummy-key',
@@ -14,9 +14,9 @@ const firebaseConfig = {
 };
 
 // Only initialize if API key is provided
-let app: any = null;
-let auth: any = null;
-let db: any = null;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
 if (import.meta.env.VITE_FIREBASE_API_KEY) {
   app = initializeApp(firebaseConfig);

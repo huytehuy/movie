@@ -12,6 +12,11 @@ function GoogleLogin() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
+    if (!auth) {
+      setAuthChecked(true);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setAuthChecked(true);
@@ -22,6 +27,7 @@ function GoogleLogin() {
   }, []);
 
   const handleGoogleLogin = async () => {
+    if (!auth) return;
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -46,6 +52,7 @@ function GoogleLogin() {
   };
 
   const handleLogout = async () => {
+    if (!auth) return;
     setIsLoading(true);
     try {
       await signOut(auth);
@@ -72,6 +79,11 @@ function GoogleLogin() {
         <Loader color="blue" size="sm" />
       </div>
     );
+  }
+
+  // Firebase not configured — hide the login button
+  if (!auth) {
+    return null;
   }
 
   return (

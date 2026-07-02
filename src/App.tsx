@@ -1,46 +1,40 @@
-import { AppShell, Box, Burger, LoadingOverlay, NavLink } from "@mantine/core";
+import { ActionIcon, AppShell, Box, Burger, Group, LoadingOverlay, NavLink, Tooltip } from "@mantine/core";
+import { IconDownload } from "@tabler/icons-react";
 import Router from "./Router";
 import "@mantine/core/styles.css";
+import "@mantine/carousel/styles.css";
+import "@mantine/notifications/styles.css";
 import { useDisclosure } from "@mantine/hooks";
 import Logo from "./assets/HUYTEHUY.png";
 import { Link, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { isMobile } from "react-device-detect";
-import SearchInput from "./components/SearchData";
+import React, { useEffect, useState } from "react";
+import SearchInput from "./components/SearchInput";
 import GoogleLogin from "./components/Login/Google";
-import React from "react";
+import ThemeToggle from "./components/ThemeToggle";
+import { usePwaInstall } from "./hooks/usePwaInstall";
 import { auth } from "./firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
-const data = [
-  {
-    name: "Trang chủ",
-    link: "",
-  },
-  {
-    name: "Phim lẻ",
-    link: "phim_le",
-  },
-  {
-    name: "Phim bộ",
-    link: "phim_bo",
-  },
-  {
-    name: "Phim đang chiếu",
-    link: "phim_dang_chieu",
-  },
-  // {
-  //   name: 'Trực tiếp bóng đá',
-  //   link: 'sport'
-  // },
+const NAV_ITEMS = [
+  { name: "Trang chủ", link: "" },
+  { name: "Phim lẻ", link: "phim_le" },
+  { name: "Phim bộ", link: "phim_bo" },
+  { name: "Phim đang chiếu", link: "phim_dang_chieu" },
+  { name: "Phim mới cập nhật", link: "phim_moi_cap_nhat" },
 ];
+
 function App() {
-  const [opened, { toggle }] = useDisclosure();
-  const [active, setActive] = useState(0);
+  const [opened, { toggle, close }] = useDisclosure();
   const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
+  const { canInstall, install } = usePwaInstall();
 
   useEffect(() => {
+    if (!auth) {
+      setAuthChecked(true);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, () => {
       setAuthChecked(true);
     });
@@ -48,123 +42,78 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Đóng menu mobile khi chuyển trang
   useEffect(() => {
-    const currentPath = location.pathname.substring(1);
-    const activeIndex = data.findIndex((item) => item.link === currentPath);
-    setActive(activeIndex >= 0 ? activeIndex : -1);
-  }, [location]);
+    close();
+  }, [location.pathname, close]);
 
   if (!authChecked) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingOverlay visible={true} />
-      </div>
-    );
+    return <LoadingOverlay visible />;
   }
 
-  const items = data.map((item, index) => (
-    <Link to={`/${item.link}`} key={index}>
-      <NavLink
-        key={item.name}
-        active={index === active}
-        label={item.name}
-        onClick={toggle}
-      />
-    </Link>
+  const currentPath = location.pathname.substring(1);
+  const items = NAV_ITEMS.map((item) => (
+    <NavLink
+      key={item.name}
+      component={Link}
+      to={`/${item.link}`}
+      active={item.link === currentPath}
+      label={item.name}
+      style={{ borderRadius: 8 }}
+    />
   ));
-  return (
-    <React.Suspense fallback={<LoadingOverlay/>}>
-    <AppShell
-      header={{ height: 70 }}
-      navbar={{
-        width: 200,
-        breakpoint: "sm",
-        collapsed: { mobile: !opened },
-      }}
-      padding="md"
-    >
-      <AppShell.Header>
-        {isMobile ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              height: "100%",
-              paddingLeft: 10,
-              paddingRight: 10,
-            }}
-          >
-            <Burger
-              size="md"
-              display={"block"}
-              opened={opened}
-              onClick={toggle}
-              aria-label="Toggle navigation"
-            />
 
-            <div
-              style={{
-                paddingRight: 20,
-                paddingLeft: 20,
-                marginLeft: 0,
-                display: "flex",
-                justifyContent: "center",
-                width: "100%",
-              }}
-            >
-              <SearchInput />
-            </div>
-            {auth.currentUser ? (
-              <GoogleLogin />
-            ) : (
-              <Link to="/">
-                <img height="50" src={Logo} alt="logo" />
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              height: "100%",
-              paddingLeft: 10,
-              paddingRight: 10,
-            }}
-          >
-            <Burger
-              size="md"
-              display="none"
-              opened={opened}
-              onClick={toggle}
-              aria-label="Toggle navigation"
-            />
-            <Link to="/">
-              <img height="50" src={Logo} alt="logo" />
+  return (
+    <React.Suspense fallback={<LoadingOverlay visible />}>
+      <AppShell
+        header={{ height: 64 }}
+        navbar={{
+          width: 220,
+          breakpoint: "sm",
+          collapsed: { mobile: !opened },
+        }}
+        padding="md"
+      >
+        <AppShell.Header>
+          <Group h="100%" px="md" gap="sm" wrap="nowrap">
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Menu" />
+            <Link to="/" style={{ display: "flex", alignItems: "center" }}>
+              <img height={44} src={Logo} alt="Huytehuy Movies" />
             </Link>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                width: "100%",
-              }}
-            >
+            <Box style={{ flex: 1, display: "flex", justifyContent: "center" }}>
               <SearchInput />
-            </div>
+            </Box>
+            {canInstall && (
+              <Tooltip label="Cài đặt ứng dụng">
+                <ActionIcon
+                  variant="default"
+                  size="lg"
+                  radius="xl"
+                  onClick={install}
+                  aria-label="Cài đặt ứng dụng"
+                >
+                  <IconDownload size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            <ThemeToggle />
+            <Box visibleFrom="sm">
+              <GoogleLogin />
+            </Box>
+          </Group>
+        </AppShell.Header>
+
+        <AppShell.Navbar p="md">
+          <Box hiddenFrom="sm" mb="md">
             <GoogleLogin />
-          </div>
-        )}
-      </AppShell.Header>
-      <AppShell.Navbar p="md">
-        {isMobile ? auth.currentUser ? null :<GoogleLogin />  : null}
-        <Box w={"100%"}>{items}</Box>
-      </AppShell.Navbar>
-      <AppShell.Main>
-        <Router />
-      </AppShell.Main>
-    </AppShell>
+          </Box>
+          <Box w="100%">{items}</Box>
+        </AppShell.Navbar>
+
+        <AppShell.Main>
+          <Router />
+        </AppShell.Main>
+      </AppShell>
     </React.Suspense>
   );
 }

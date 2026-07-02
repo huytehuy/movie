@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { collection, query, getDocs, orderBy } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth } from '../firebase/firebaseConfig';
-import { Card, Text, Stack, Loader, Button, Grid, Flex } from '@mantine/core';
+import { Card, Text, Stack, Loader, Button, Grid, Flex, Center, Title } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -26,7 +26,18 @@ function History() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user:any) => {
+    if (!auth) {
+      setAuthChecked(true);
+      notifications.show({
+        title: 'Warning',
+        message: 'Please login to view history',
+        color: 'yellow'
+      });
+      navigate('/');
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
       setAuthChecked(true);
       if (!user) {
         notifications.show({
@@ -45,6 +56,10 @@ function History() {
   }, [navigate]);
 
   const fetchHistory = async (userId: string) => {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
     try {
       const historyRef = collection(db, 'watch-history', userId, 'history');
       const q = query(historyRef, orderBy('timestamp', 'desc'));
@@ -81,25 +96,27 @@ function History() {
   // Hiển thị loading khi đang kiểm tra auth hoặc đang tải dữ liệu
   if (!authChecked || loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <Center mih="60vh">
         <Loader size="lg" />
-      </div>
+      </Center>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Lịch sử xem phim</h1>
-<Helmet>
-  <title>Lịch sử xem phim</title>
-</Helmet>
+    <div>
+      <Helmet>
+        <title>Lịch sử xem phim</title>
+      </Helmet>
+      <Title order={1} ta="center" mb="lg">Lịch sử xem phim</Title>
       {history.length === 0 ? (
-        <Text c="dimmed">Không có lịch sử xem phim</Text>
+        <Center mt="xl">
+          <Text c="dimmed">Không có lịch sử xem phim</Text>
+        </Center>
       ) : (
         <Grid>
           {history.map((item) => (
-            <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
-                <Card key={item.id} shadow="sm" padding="lg" radius="md" withBorder>
+            <Grid.Col span={{ base: 12, xs: 6, md: 4, lg: 3 }} key={item.id}>
+                <Card shadow="sm" padding="lg" radius="md" withBorder h="100%">
                   <Stack>
                   <Flex justify="center" align="center" direction="column">
                   <LazyLoadImage style={{objectFit:"cover", height:"150px", width:"auto", borderRadius:"8px"}} src={item.image} alt={item?.filmName} />
@@ -113,7 +130,7 @@ function History() {
                       Định dạng: {item.serverName}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      Xem lần cuối: {item.timestamp.toLocaleString()}
+                      Xem lần cuối: {item.timestamp?.toLocaleString() || 'Không rõ'}
                     </Text>
                     <Button
                       variant="light"

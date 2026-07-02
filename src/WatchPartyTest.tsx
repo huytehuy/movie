@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { WatchPartyPlayer, createWatchPartyRoom, useWatchParty } from './REACT_INTEGRATION';
+import { WatchPartyPlayer, createWatchPartyRoom, useWatchParty, getRoomInfo } from './REACT_INTEGRATION';
 
 export default function WatchPartyTest() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -28,13 +28,11 @@ export default function WatchPartyTest() {
     // Fetch room info if joining via URL
     useEffect(() => {
         if (roomId && !watchPartyState.connected) {
-            import('./REACT_INTEGRATION').then(mod => {
-                mod.getRoomInfo(roomId).then(info => {
-                    if (info.customVideoUrl) {
-                        setVideoUrl(info.customVideoUrl);
-                    }
-                }).catch(e => console.error("Could not fetch room info:", e));
-            });
+            getRoomInfo(roomId).then(info => {
+                if (info.customVideoUrl) {
+                    setVideoUrl(info.customVideoUrl);
+                }
+            }).catch(e => console.error("Could not fetch room info:", e));
         }
     }, [roomId]);
 
@@ -59,8 +57,7 @@ export default function WatchPartyTest() {
             setRoomId(inputRoomId);
             // Fetch room info to get video URL
             try {
-                const mod = await import('./REACT_INTEGRATION');
-                const info = await mod.getRoomInfo(inputRoomId);
+                const info = await getRoomInfo(inputRoomId);
                 if (info.customVideoUrl) {
                     setVideoUrl(info.customVideoUrl);
                 }
