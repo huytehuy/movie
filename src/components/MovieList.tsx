@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation, useParams } from "react-router-dom";
 import { Center, Grid, Pagination, Skeleton, Text, Title } from "@mantine/core";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { Category, CategoryName } from "../data/enumCategory";
 import { API } from "../config/api";
 import { COUNTRIES, GENRES } from "../data/filters";

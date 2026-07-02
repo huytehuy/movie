@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { Center, Grid, Skeleton, Text, Title } from "@mantine/core";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { API } from "../config/api";
 import { MovieSummary } from "../types/Movie";
 import MovieCard from "./MovieCard";

@@ -6,7 +6,7 @@ import { Card, Text, Stack, Loader, Button, Grid, Flex, Center, Title } from '@m
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-import { Helmet } from 'react-helmet';
+import { Helmet } from "react-helmet-async";
 
 interface HistoryItem {
   id: string;

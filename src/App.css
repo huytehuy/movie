@@ -3,6 +3,14 @@
   list-style: none;
 }
 
+/* Chặn double-tap zoom và pinch zoom — cho cảm giác app thật */
+html,
+body {
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
 /* Card phim: hiệu ứng hover nhẹ */
 .movie-card {
   display: block;

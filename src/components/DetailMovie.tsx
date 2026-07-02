@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import PlaceHolderImage from "../assets/800@3x.png";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import { auth, db } from "../firebase/firebaseConfig";
 import { collection, addDoc, serverTimestamp, updateDoc, getDocs, where, query } from 'firebase/firestore';
 import { notifications } from "@mantine/notifications";
@@ -17,6 +17,8 @@ import MovieCarousel from "./MovieCarousel";
 interface FilmData {
   name: string;
   thumb_url: string;
+  poster_url?: string;
+  description?: string;
   time: string;
   language: string;
   category: { list: { name: string }[] }[];
@@ -249,8 +251,11 @@ const DetailMovie = () => {
       {filmData && (
         <Helmet>
           <title>{filmData.name}</title>
-          <meta property="og:image" content={filmData.thumb_url} />
+          <meta property="og:image" content={filmData.poster_url || filmData.thumb_url} />
           <meta property="og:title" content={filmData.name} />
+          {filmData.description && (
+            <meta property="og:description" content={filmData.description.slice(0, 160)} />
+          )}
         </Helmet>
       )}
       <LoadingOverlay

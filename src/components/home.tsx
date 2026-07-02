@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import MovieCarousel from "./MovieCarousel";
 import { API, ophimImage } from "../config/api";
 import { MovieSummary } from "../types/Movie";
