@@ -20,6 +20,8 @@ export const API = {
     `${NGUONC_BASE}/films/nam-phat-hanh/${year}?page=${page}`,
   /** Chi tiết phim */
   film: (slug: string) => `${NGUONC_BASE}/film/${slug}`,
+  /** Chi tiết phim bên ophim (có link m3u8 phát trực tiếp) */
+  ophimFilm: (slug: string) => `https://ophim1.com/v1/api/phim/${slug}`,
   /** Tìm kiếm */
   search: (keyword: string) =>
     `${NGUONC_BASE}/films/search?keyword=${encodeURIComponent(keyword)}`,
