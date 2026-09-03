@@ -1,129 +1,180 @@
 import 'movie_model.dart';
 
+/// Full movie record, including the episode/server matrix.
 class MovieDetail extends Movie {
-  final String description;
-  final String time;
-  final String language;
-  final String year;
-  final String country;
-  final List<String> categories;
-  final List<EpisodeServer> episodes;
-
-  factory MovieDetail.fromOphimJson(Map<String, dynamic> json) {
-    if (json['status'] != 'success') {
-      throw Exception('Ophim API returned error status');
-    }
-    final data = json['data'] ?? {};
-    final item = data['item'] ?? {};
-    final seo = data['seoOnPage'] ?? {};
-    
-    // Image handling
-    String thumb = item['thumb_url'] ?? '';
-    String cdn = data['APP_DOMAIN_CDN_IMAGE'] ?? 'https://img.ophim.live/uploads/movies';
-    if (thumb.isNotEmpty && !thumb.startsWith('http')) {
-       thumb = "$cdn/$thumb";
-    }
-
-    // Episodes
-    final rawEpisodes = item['episodes'] as List? ?? [];
-    List<EpisodeServer> episodes = rawEpisodes.map((e) {
-      final serverName = e['server_name'] ?? 'Unknown';
-      final serverData = e['server_data'] as List? ?? [];
-      final items = serverData.map((d) => Episode(
-         name: d['name'] ?? '',
-         slug: d['slug'] ?? '',
-         embed: d['link_embed'] ?? d['link_m3u8'] ?? '',
-      )).toList();
-      return EpisodeServer(serverName: serverName, items: items);
-    }).toList();
-
-    // Categories
-    final categories = (item['category'] as List? ?? []).map((e) => e['name'].toString()).toList();
-    final countries = (item['country'] as List? ?? []).map((e) => e['name'].toString()).toList();
-
-    return MovieDetail(
-      name: item['name'] ?? item['origin_name'] ?? '',
-      slug: item['slug'] ?? '',
-      thumbUrl: thumb,
-      description: item['content'] ?? seo['descriptionHead'] ?? '',
-      time: item['time'] ?? '',
-      language: item['lang'] ?? '',
-      year: item['year'].toString(),
-      country: countries.isNotEmpty ? countries.first : '',
-      categories: categories,
-      episodes: episodes,
-    );
-  }
-
   MovieDetail({
     required super.name,
     required super.slug,
     required super.thumbUrl,
+    super.posterUrl,
+    super.originName,
+    super.year,
+    super.episodeCurrent,
+    super.quality,
+    super.lang,
+    super.time,
     required this.description,
-    required this.time,
-    required this.language,
-    required this.year,
     required this.country,
     required this.categories,
     required this.episodes,
+    this.actors = const [],
+    this.director = '',
+    this.trailerUrl = '',
   });
 
-  factory MovieDetail.fromJson(Map<String, dynamic> json) {
-    final movieData = json['movie'] ?? {};
-    final categoryList = _parseList(movieData['category']);
-    // Removed old manual Map check because _parseList handles it
-    
-    // Safety checks for categories
-    List<String> parsedCategories = [];
-    String parsedYear = 'Unknown';
-    String parsedCountry = 'Unknown';
+  final String description;
+  final String country;
+  final List<String> categories;
+  final List<EpisodeServer> episodes;
+  final List<String> actors;
+  final String director;
+  final String trailerUrl;
 
-    try {
-       // Based on DetailMovie.tsx logic or API structure:
-       // The list items are now objects with {group: ..., list: ...}
-       // We need to find the group with name 'Thể loại', 'Năm', 'Quốc gia'
-       
-       for (var item in categoryList) {
-         // item might be a Map with structure {group: {...}, list: [...]}
-         if (item is! Map) continue;
-         
-         final groupMap = item['group'];
-         String groupName = '';
-         if (groupMap is Map) {
-           groupName = groupMap['name']?.toString() ?? '';
-         }
-         
-         final list = item['list'] as List<dynamic>?;
-         
-         if (groupName == 'Thể loại' && list != null) {
-            parsedCategories = list.map((e) => e['name'].toString()).toList();
-         } else if (groupName == 'Năm' && list != null && list.isNotEmpty) {
-            parsedYear = list[0]['name'].toString();
-         } else if (groupName == 'Quốc gia' && list != null && list.isNotEmpty) {
-            parsedCountry = list[0]['name'].toString();
-         }
-       }
-    } catch (e) {
-      print("Error parsing categories details: $e");
+  /// Convenience for the old field name used across the UI.
+  String get language => lang;
+
+  bool get hasPlayableSource =>
+      episodes.any((server) => server.items.any((e) => e.hasSource));
+
+  /// The plain description with HTML tags stripped out; several sources return
+  /// `<p>` markup.
+  String get plainDescription => description
+      .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'<[^>]*>'), '')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&amp;', '&')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .trim();
+
+  /// phimapi.com / KKPhim — the important source, because it returns a direct
+  /// `link_m3u8` that the native player (and therefore the TV remote) can use.
+  factory MovieDetail.fromPhimApi(Map<String, dynamic> json) {
+    final movie = (json['movie'] as Map?)?.cast<String, dynamic>() ?? {};
+    if (movie.isEmpty) {
+      throw Exception('phimapi trả về dữ liệu rỗng');
     }
 
+    final rawEpisodes = json['episodes'] as List? ?? [];
+    final servers = rawEpisodes.whereType<Map>().map((server) {
+      final data = server['server_data'] as List? ?? [];
+      return EpisodeServer(
+        serverName: (server['server_name'] ?? 'Server').toString(),
+        items: data.whereType<Map>().map((d) {
+          return Episode(
+            name: (d['name'] ?? '').toString(),
+            slug: (d['slug'] ?? '').toString(),
+            embed: (d['link_embed'] ?? '').toString(),
+            m3u8: (d['link_m3u8'] ?? '').toString(),
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    final base = Movie.fromJson(movie);
+
     return MovieDetail(
-      name: movieData['name'] ?? '',
-      slug: movieData['slug'] ?? '',
-      thumbUrl: movieData['thumb_url'] ?? '',
-      description: movieData['content'] ?? movieData['description'] ?? '',
-      time: movieData['time'] ?? '',
-      language: movieData['lang'] ?? movieData['language'] ?? '',
-      year: parsedYear,
-      country: parsedCountry,
-      categories: parsedCategories,
-      episodes: _parseList(movieData['episodes'])
-          .map((e) => EpisodeServer.fromJson(e))
+      name: base.name,
+      slug: base.slug,
+      thumbUrl: base.thumbUrl,
+      posterUrl: base.posterUrl,
+      originName: base.originName,
+      year: base.year,
+      episodeCurrent: base.episodeCurrent,
+      quality: base.quality,
+      lang: base.lang,
+      time: base.time,
+      description: (movie['content'] ?? '').toString(),
+      country: _names(movie['country']).join(', '),
+      categories: _names(movie['category']),
+      episodes: servers,
+      actors: (movie['actor'] as List? ?? [])
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
           .toList(),
+      director: (movie['director'] as List? ?? [])
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .join(', '),
+      trailerUrl: (movie['trailer_url'] ?? '').toString(),
     );
   }
 
-  static List<dynamic> _parseList(dynamic data) {
+  /// phim.nguonc.com — kept as a last-resort fallback. It only exposes embed
+  /// links, so playback there falls back to the WebView.
+  factory MovieDetail.fromNguoncJson(Map<String, dynamic> json) {
+    final movie = (json['movie'] as Map?)?.cast<String, dynamic>() ?? {};
+    if (movie.isEmpty) {
+      throw Exception('nguonc trả về dữ liệu rỗng');
+    }
+
+    List<String> categories = [];
+    String year = '';
+    String country = '';
+    for (final entry in _asList(movie['category'])) {
+      if (entry is! Map) continue;
+      final group = entry['group'];
+      final groupName = group is Map ? (group['name']?.toString() ?? '') : '';
+      final list = entry['list'] as List?;
+      if (list == null || list.isEmpty) continue;
+      switch (groupName) {
+        case 'Thể loại':
+          categories = list.map((e) => e['name'].toString()).toList();
+        case 'Năm':
+          year = list.first['name'].toString();
+        case 'Quốc gia':
+          country = list.first['name'].toString();
+      }
+    }
+
+    final servers = _asList(movie['episodes']).whereType<Map>().map((server) {
+      return EpisodeServer(
+        serverName: (server['server_name'] ?? 'Server').toString(),
+        items: _asList(server['items']).whereType<Map>().map((d) {
+          return Episode(
+            name: (d['name'] ?? '').toString(),
+            slug: (d['slug'] ?? '').toString(),
+            embed: (d['embed'] ?? '').toString(),
+            m3u8: (d['m3u8'] ?? '').toString(),
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    return MovieDetail(
+      name: (movie['name'] ?? '').toString(),
+      slug: (movie['slug'] ?? '').toString(),
+      thumbUrl: (movie['thumb_url'] ?? '').toString(),
+      posterUrl: (movie['poster_url'] ?? '').toString(),
+      originName: (movie['original_name'] ?? '').toString(),
+      year: year,
+      episodeCurrent: (movie['current_episode'] ?? '').toString(),
+      quality: (movie['quality'] ?? '').toString(),
+      lang: (movie['language'] ?? '').toString(),
+      time: (movie['time'] ?? '').toString(),
+      description: (movie['description'] ?? '').toString(),
+      country: country,
+      categories: categories,
+      episodes: servers,
+      actors: (movie['casts'] ?? '')
+          .toString()
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      director: (movie['director'] ?? '').toString(),
+    );
+  }
+
+  static List<String> _names(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .map((e) => e is Map ? (e['name']?.toString() ?? '') : e.toString())
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+  }
+
+  static List<dynamic> _asList(dynamic data) {
     if (data == null) return [];
     if (data is List) return data;
     if (data is Map) return data.values.toList();
@@ -132,33 +183,59 @@ class MovieDetail extends Movie {
 }
 
 class EpisodeServer {
-  final String serverName;
-  final List<Episode> items;
-
   EpisodeServer({required this.serverName, required this.items});
 
-  factory EpisodeServer.fromJson(Map<String, dynamic> json) {
-    return EpisodeServer(
-      serverName: json['server_name'] ?? '',
-      items: MovieDetail._parseList(json['items'])
-          .map((e) => Episode.fromJson(e))
-          .toList(),
-    );
-  }
+  final String serverName;
+  final List<Episode> items;
 }
 
 class Episode {
+  Episode({
+    required this.name,
+    required this.slug,
+    required this.embed,
+    this.m3u8 = '',
+  });
+
   final String name;
   final String slug;
+
+  /// Iframe player URL. Playable only inside a WebView.
   final String embed;
 
-  Episode({required this.name, required this.slug, required this.embed});
+  /// Direct HLS stream. Preferred everywhere, and the only option on a TV
+  /// because a WebView swallows D-pad key events.
+  final String m3u8;
 
-  factory Episode.fromJson(Map<String, dynamic> json) {
-    return Episode(
-      name: json['name'] ?? '',
-      slug: json['slug'] ?? '',
-      embed: json['embed'] ?? '',
-    );
+  bool get hasSource => m3u8.isNotEmpty || embed.isNotEmpty;
+
+  /// A `player/?url=<m3u8>` embed still carries a usable direct stream.
+  String get resolvedM3u8 {
+    if (m3u8.isNotEmpty) return m3u8;
+    final match = RegExp(r'[?&]url=(http[^&]+)').firstMatch(embed);
+    if (match != null) return Uri.decodeComponent(match.group(1)!);
+    if (embed.contains('.m3u8')) return embed;
+    return '';
+  }
+
+  /// The URL to load in the player WebView.
+  ///
+  /// Prefers the source's own embed page. When a source only gave us a direct
+  /// stream, wrap it in phimapi's player so there is still something a WebView
+  /// can show.
+  String get playableEmbed {
+    if (embed.isNotEmpty) return embed;
+    final stream = resolvedM3u8;
+    if (stream.isNotEmpty) {
+      return 'https://player.phimapi.com/player/?url=$stream';
+    }
+    return '';
+  }
+
+  String get displayName {
+    if (name.trim().isEmpty) return 'Tập ?';
+    // Long labels like "Tập 12" are fine, but some sources return the raw
+    // filename; keep the card readable.
+    return name.length > 22 ? '${name.substring(0, 21)}…' : name;
   }
 }

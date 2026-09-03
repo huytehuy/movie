@@ -1,121 +1,139 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:flutter_app/src/core/device.dart';
 import 'package:flutter_app/src/features/home/movie_model.dart';
 import 'package:flutter_app/src/services/movie_service.dart';
-import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_app/src/shared/app_shell.dart';
+import 'package:flutter_app/src/shared/focusable.dart';
+import 'package:flutter_app/src/shared/movie_grid.dart';
+import 'package:flutter_app/src/shared/states.dart';
+
+/// Human-readable titles for the catalogue slugs used in the router.
+const Map<String, String> kCategoryTitles = {
+  'phim-moi-cap-nhat': 'Mới cập nhật',
+  'phim-le': 'Phim lẻ',
+  'phim-bo': 'Phim bộ',
+  'hoat-hinh': 'Hoạt hình',
+  'tv-shows': 'TV Shows',
+  'phim-vietsub': 'Phim Vietsub',
+  'phim-thuyet-minh': 'Phim thuyết minh',
+  'phim-long-tieng': 'Phim lồng tiếng',
+};
 
 class CategoryScreen extends StatefulWidget {
-  final String title;
-  final String category; // 'phim-le', 'phim-bo', 'hoat-hinh', etc.
+  const CategoryScreen({super.key, required this.slug});
 
-  const CategoryScreen({super.key, required this.title, required this.category});
+  final String slug;
 
   @override
   State<CategoryScreen> createState() => _CategoryScreenState();
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  final MovieService _movieService = MovieService();
-  List<Movie> movies = [];
-  bool isLoading = true;
+  final MovieService _service = MovieService();
+
+  final List<Movie> _movies = [];
+  bool _loading = true;
+  bool _loadingMore = false;
+  String? _error;
+  int _page = 1;
+  int _totalPages = 1;
+
+  String get _title => kCategoryTitles[widget.slug] ?? widget.slug;
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _load();
   }
 
   @override
   void didUpdateWidget(CategoryScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.category != widget.category) {
-      _fetchData();
-    }
+    if (oldWidget.slug != widget.slug) _load();
   }
 
-  Future<void> _fetchData() async {
-    setState(() => isLoading = true);
-    try {
-      List<Movie> result = [];
-      // Map category string to service call
-      // This is a bit manual but simple for now
-      switch (widget.category) {
-        case 'phim-le':
-          result = await _movieService.fetchPhimLe();
-          break;
-        case 'phim-bo':
-          result = await _movieService.fetchPhimBo();
-          break;
-        case 'phim-dang-chieu':
-          result = await _movieService.fetchPhimDangChieu();
-          break;
-        case 'tv-shows':
-          result = await _movieService.fetchTvShows();
-          break;
-        default:
-          result = [];
-      }
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _movies.clear();
+      _page = 1;
+    });
 
-      if (mounted) {
-        setState(() {
-          movies = result;
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print("Error fetching category ${widget.category}: $e");
-      if (mounted) setState(() => isLoading = false);
-    }
+    final page = await _service.fetchList(widget.slug, page: 1, limit: 30);
+    if (!mounted) return;
+    setState(() {
+      _movies.addAll(page.items);
+      _totalPages = page.totalPages;
+      _loading = false;
+      _error = page.items.isEmpty ? 'Danh mục này chưa có phim nào.' : null;
+    });
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || _page >= _totalPages) return;
+    setState(() => _loadingMore = true);
+
+    final next = _page + 1;
+    final page = await _service.fetchList(widget.slug, page: next, limit: 30);
+    if (!mounted) return;
+    setState(() {
+      _movies.addAll(page.items);
+      _page = next;
+      _totalPages = page.totalPages;
+      _loadingMore = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Simple 2 columns
-                childAspectRatio: 0.7,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+    final tv = Device.isTv;
+    final hPad = tv ? 44.0 : 16.0;
+
+    if (_loading) return LoadingState(message: 'Đang tải $_title...');
+    if (_error != null) return ErrorState(message: _error!, onRetry: _load);
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(hPad, tv ? 32 : 20, hPad, 16),
+            child: SectionTitle(
+              title: _title,
+              trailing: Text(
+                '${_movies.length} phim',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              itemCount: movies.length,
-              itemBuilder: (context, index) {
-                final movie = movies[index];
-                return GestureDetector(
-                  onTap: () => context.go('/detail/${movie.slug}'),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: movie.thumbUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        movie.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
+          ),
+        ),
+        MovieGrid(
+          movies: _movies,
+          autofocusFirst: tv,
+          onSelect: (movie) => context.push('/detail/${movie.slug}', extra: movie),
+        ),
+        if (_page < _totalPages)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 40, left: hPad, right: hPad),
+              child: Center(
+                child: _loadingMore
+                    ? const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      )
+                    : TvButton(
+                        label: 'Xem thêm',
+                        icon: Icons.expand_more_rounded,
+                        onPressed: _loadMore,
+                      ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

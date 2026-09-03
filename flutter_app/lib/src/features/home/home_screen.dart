@@ -1,8 +1,18 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:flutter_app/src/core/device.dart';
 import 'package:flutter_app/src/features/home/movie_model.dart';
 import 'package:flutter_app/src/services/movie_service.dart';
-import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_app/src/shared/app_shell.dart';
+import 'package:flutter_app/src/shared/focusable.dart';
+import 'package:flutter_app/src/shared/movie_card.dart';
+import 'package:flutter_app/src/shared/states.dart';
+import 'package:flutter_app/src/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,129 +22,370 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final MovieService _movieService = MovieService();
-  
-  List<Movie> hotMovies = [];
-  List<Movie> dangChieuMovies = [];
-  List<Movie> phimLeMovies = [];
-  List<Movie> phimBoMovies = [];
-  List<Movie> tvShows = [];
-  
-  bool isLoading = true;
+  final MovieService _service = MovieService();
+
+  final Map<String, List<Movie>> _rails = {};
+
+  /// Rails render as they arrive instead of waiting for all five, so the first
+  /// posters appear about as fast as the fastest request.
+  int _pending = MovieService.homeRails.length;
+  String? _error;
+
+  /// The movie behind the hero banner: whatever the remote is pointing at.
+  /// A notifier rather than setState, so moving one card repaints the banner
+  /// instead of all five rails and their ~120 cards.
+  final ValueNotifier<Movie?> _spotlight = ValueNotifier(null);
+
+  /// Detail prefetch fires only after the D-pad rests on a card, so scrolling
+  /// through a rail does not spray requests.
+  Timer? _prefetchTimer;
 
   @override
   void initState() {
     super.initState();
-    _fetchAllData();
+    _load();
   }
 
-  Future<void> _fetchAllData() async {
-    try {
-      final results = await Future.wait([
-        _movieService.fetchHotMovies(),
-        _movieService.fetchPhimDangChieu(),
-        _movieService.fetchPhimLe(),
-        _movieService.fetchPhimBo(),
-        _movieService.fetchTvShows(),
-      ]);
+  @override
+  void dispose() {
+    _prefetchTimer?.cancel();
+    _spotlight.dispose();
+    super.dispose();
+  }
 
-      if (mounted) {
+  void _load() {
+    setState(() {
+      _rails.clear();
+      _error = null;
+      _pending = MovieService.homeRails.length;
+    });
+
+    for (final rail in MovieService.homeRails) {
+      _service.fetchList(rail.slug).then((page) {
+        if (!mounted) return;
         setState(() {
-          hotMovies = results[0];
-          dangChieuMovies = results[1];
-          phimLeMovies = results[2];
-          phimBoMovies = results[3];
-          tvShows = results[4];
-          isLoading = false;
+          _pending--;
+          if (page.items.isNotEmpty) {
+            _rails[rail.slug] = page.items;
+            _spotlight.value ??= page.items.first;
+          }
+          if (_pending == 0 && _rails.isEmpty) {
+            _error = 'Không tải được danh sách phim. Kiểm tra kết nối mạng.';
+          }
         });
-      }
-    } catch (e) {
-      print("Error loading data: $e");
-      if (mounted) setState(() => isLoading = false);
+      }).catchError((Object e) {
+        if (!mounted) return;
+        setState(() {
+          _pending--;
+          if (_pending == 0 && _rails.isEmpty) _error = e.toString();
+        });
+      });
     }
+  }
+
+  void _openDetail(Movie movie) =>
+      context.push('/detail/${movie.slug}', extra: movie);
+
+  void _onCardFocused(Movie movie) {
+    _spotlight.value = movie;
+    _prefetchTimer?.cancel();
+    _prefetchTimer = Timer(const Duration(milliseconds: 700), () {
+      _service.prefetchDetail(movie.slug);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-       return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return ErrorState(message: _error!, onRetry: _load);
+    }
+    if (_rails.isEmpty) {
+      return const LoadingState(message: 'Đang tải phim...');
     }
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: Column(
+    final tv = Device.isTv;
+    final horizontal = tv ? 44.0 : 16.0;
+    final railSlugs =
+        MovieService.homeRails.where((r) => _rails[r.slug] != null).toList();
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _Hero(
+            spotlight: _spotlight,
+            onPlay: () {
+              final movie = _spotlight.value;
+              if (movie != null) _openDetail(movie);
+            },
+            onSearch: () => context.go('/search'),
+          ),
+        ),
+        for (final rail in railSlugs)
+          SliverToBoxAdapter(
+            child: _Rail(
+              title: rail.title,
+              movies: _rails[rail.slug]!,
+              horizontalPadding: horizontal,
+              // Give the first card initial focus so the remote always has a
+              // starting point.
+              autofocusFirst: tv && rail.slug == railSlugs.first.slug,
+              onSelect: _openDetail,
+              onFocus: _onCardFocused,
+              onSeeAll: rail.slug == 'phim-moi-cap-nhat'
+                  ? null
+                  : () => context.go('/list/${rail.slug}'),
+            ),
+          ),
+        if (_pending > 0)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 26),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            ),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+      ],
+    );
+  }
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero({
+    required this.spotlight,
+    required this.onPlay,
+    required this.onSearch,
+  });
+
+  final ValueListenable<Movie?> spotlight;
+  final VoidCallback onPlay;
+  final VoidCallback onSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    final tv = Device.isTv;
+    final height = tv ? 420.0 : (context.isPhone ? 300.0 : 380.0);
+    final padding = tv ? 44.0 : 16.0;
+    final width = MediaQuery.sizeOf(context).width.round();
+
+    return SizedBox(
+      height: height,
+      child: ValueListenableBuilder<Movie?>(
+        valueListenable: spotlight,
+        builder: (context, m, _) => Stack(
+          fit: StackFit.expand,
           children: [
-            if (hotMovies.isNotEmpty) _buildSection(context, 'Phim đang HOT', hotMovies),
-            if (dangChieuMovies.isNotEmpty) _buildSection(context, 'Phim đang chiếu', dangChieuMovies),
-            if (phimLeMovies.isNotEmpty) _buildSection(context, 'Phim lẻ', phimLeMovies),
-            if (phimBoMovies.isNotEmpty) _buildSection(context, 'Phim bộ', phimBoMovies),
-            if (tvShows.isNotEmpty) _buildSection(context, 'TV Shows', tvShows),
+            if (m != null && m.backdrop.isNotEmpty)
+              CachedNetworkImage(
+                key: ValueKey(m.slug),
+                imageUrl: m.backdrop,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                // Decoding a 1500px source at screen width instead of full size
+                // keeps a weak TV box from stalling on every focus move.
+                memCacheWidth: width,
+                fadeInDuration: const Duration(milliseconds: 300),
+                placeholder: (context, _) =>
+                    Container(color: AppColors.surfaceHigh),
+                errorWidget: (context, _, __) =>
+                    Container(color: AppColors.surfaceHigh),
+              )
+            else
+              Container(color: AppColors.surfaceHigh),
+            const DecoratedBox(
+              decoration: BoxDecoration(gradient: AppColors.scrim),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xEE07080C), Color(0x0007080C)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(padding, 18, padding, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'HuyTeHuy Movies',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  letterSpacing: 1.2,
+                                ),
+                      ),
+                      const Spacer(),
+                      if (!context.isWide)
+                        TvIconButton(
+                          icon: Icons.search_rounded,
+                          tooltip: 'Tìm kiếm',
+                          onPressed: onSearch,
+                        ),
+                    ],
+                  ),
+                  const Spacer(),
+                  if (m != null) ...[
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: tv ? 760 : 520),
+                      child: Text(
+                        m.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: (tv
+                                ? Theme.of(context).textTheme.displaySmall
+                                : Theme.of(context).textTheme.headlineMedium)
+                            ?.copyWith(
+                          shadows: const [
+                            Shadow(color: Colors.black87, blurRadius: 12),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        for (final chip in [
+                          m.year,
+                          m.quality,
+                          m.lang,
+                          m.episodeCurrent,
+                        ].where((v) => v.trim().isNotEmpty))
+                          _MetaChip(label: chip),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        TvButton(
+                          label: 'Xem ngay',
+                          icon: Icons.play_arrow_rounded,
+                          filled: true,
+                          onPressed: onPlay,
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildSection(BuildContext context, String title, List<Movie> movies) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: AppColors.textPrimary),
+      ),
+    );
+  }
+}
+
+class _Rail extends StatelessWidget {
+  const _Rail({
+    required this.title,
+    required this.movies,
+    required this.horizontalPadding,
+    required this.onSelect,
+    required this.onFocus,
+    this.onSeeAll,
+    this.autofocusFirst = false,
+  });
+
+  final String title;
+  final List<Movie> movies;
+  final double horizontalPadding;
+  final ValueChanged<Movie> onSelect;
+  final ValueChanged<Movie> onFocus;
+  final VoidCallback? onSeeAll;
+  final bool autofocusFirst;
+
+  @override
+  Widget build(BuildContext context) {
+    final tv = Device.isTv;
+    final cardWidth = tv ? 190.0 : (context.isPhone ? 132.0 : 160.0);
+    // 2:3 poster + room for the two-line title, plus slack for the focus scale.
+    final railHeight = cardWidth * 1.5 + (tv ? 78 : 62);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: SectionTitle(
+              title: title,
+              trailing: onSeeAll == null
+                  ? null
+                  : TvButton(
+                      label: 'Tất cả',
+                      compact: true,
+                      onPressed: onSeeAll,
+                    ),
             ),
           ),
-        ),
-        SizedBox(
-          height: 250, // Adjust height based on aspect ratio
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            itemCount: movies.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final movie = movies[index];
-              return GestureDetector(
-                onTap: () => context.go('/detail/${movie.slug}'),
-                child: SizedBox(
-                   width: 150,
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       Expanded(
-                         child: ClipRRect(
-                           borderRadius: BorderRadius.circular(8),
-                           child: CachedNetworkImage(
-                             imageUrl: movie.thumbUrl,
-                             fit: BoxFit.cover,
-                             width: double.infinity,
-                             errorWidget: (context, url, error) => Container(
-                               color: Colors.grey[300],
-                               child: const Icon(Icons.broken_image),
-                             ),
-                           ),
-                         ),
-                       ),
-                       const SizedBox(height: 8),
-                       Text(
-                         movie.name,
-                         maxLines: 2,
-                         overflow: TextOverflow.ellipsis,
-                         style: const TextStyle(fontWeight: FontWeight.w500),
-                       )
-                     ],
-                   ),
-                ),
-              );
-            },
+          const SizedBox(height: 12),
+          SizedBox(
+            height: railHeight,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              itemCount: movies.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (context, index) {
+                final movie = movies[index];
+                return Padding(
+                  // Vertical slack so the focus ring is not clipped.
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: MovieCard(
+                    movie: movie,
+                    width: cardWidth,
+                    autofocus: autofocusFirst && index == 0,
+                    onTap: () => onSelect(movie),
+                    onFocusChange: (focused) {
+                      if (focused) onFocus(movie);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-      ],
+        ],
+      ),
     );
   }
 }

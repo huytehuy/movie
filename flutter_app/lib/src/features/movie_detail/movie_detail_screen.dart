@@ -1,327 +1,413 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_app/src/features/home/movie_detail_model.dart';
-import 'package:flutter_app/src/services/movie_service.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:flutter_app/src/core/device.dart';
+import 'package:flutter_app/src/features/home/movie_detail_model.dart';
+import 'package:flutter_app/src/features/home/movie_model.dart';
+import 'package:flutter_app/src/features/watch/watch_screen.dart';
+import 'package:flutter_app/src/services/movie_service.dart';
+import 'package:flutter_app/src/shared/app_shell.dart';
+import 'package:flutter_app/src/shared/focusable.dart';
+import 'package:flutter_app/src/shared/states.dart';
+import 'package:flutter_app/src/theme/app_theme.dart';
 
 class MovieDetailScreen extends StatefulWidget {
+  const MovieDetailScreen({super.key, required this.slug, this.seed});
+
   final String slug;
 
-  const MovieDetailScreen({super.key, required this.slug});
+  /// The card the user came from. Lets the backdrop, title and badges paint on
+  /// the first frame instead of after a network round trip.
+  final Movie? seed;
 
   @override
   State<MovieDetailScreen> createState() => _MovieDetailScreenState();
 }
 
 class _MovieDetailScreenState extends State<MovieDetailScreen> {
-  final MovieService _movieService = MovieService();
+  final MovieService _service = MovieService();
+
   MovieDetail? _movie;
-  bool _isLoading = true;
-  String? _currentEmbedUrl;
-  InAppWebViewController? _webViewController;
-  String? _selectedServer;
-  String? _selectedEpisodeSlug;
-  String? _errorMessage;
-  double _aspectRatio = 16 / 9;
+  String? _error;
+  int _serverIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchDetail();
+    _load();
   }
 
-  Future<void> _fetchDetail() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  Future<void> _load() async {
+    setState(() => _error = null);
     try {
-      final movie = await _movieService.fetchMovieDetail(widget.slug);
-      if (mounted) {
-        if (movie != null) {
-          setState(() {
-            _movie = movie;
-            _isLoading = false;
-            // Auto-select first episode if available
-            if (movie.episodes.isNotEmpty) {
-               _selectEpisode(movie.episodes[0].serverName, movie.episodes[0].items[0]);
-            }
-          });
-        } else {
-           setState(() {
-             _isLoading = false;
-             _errorMessage = "Movie data is null (API might have returned null)";
-           });
-        }
-      }
+      final movie = await _service.fetchMovieDetail(widget.slug);
+      if (!mounted) return;
+      setState(() {
+        _movie = movie;
+        _serverIndex = _bestServer(movie);
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = e.toString();
-        });
-      }
+      if (!mounted) return;
+      setState(() => _error = e.toString());
     }
   }
 
-  void _selectEpisode(String serverName, Episode episode) {
-    setState(() {
-      _selectedServer = serverName;
-      _selectedEpisodeSlug = episode.slug;
-      _currentEmbedUrl = episode.embed;
-    });
-
-    if (_webViewController != null) {
-      _webViewController!.loadUrl(urlRequest: URLRequest(url: WebUri(episode.embed)));
+  /// Prefer a server that has links, so "Xem ngay" works on the first press.
+  int _bestServer(MovieDetail movie) {
+    for (var i = 0; i < movie.episodes.length; i++) {
+      if (movie.episodes[i].items.any((e) => e.playableEmbed.isNotEmpty)) {
+        return i;
+      }
     }
+    return 0;
   }
 
-  // Seek Overlay State
-  bool _showSeekOverlay = false;
-  bool _isForward = true;
-  int _seekAmount = 15;
-
-  Future<void> _seekVideo(bool forward) async {
-    if (_webViewController == null) return;
-    
-    final seconds = forward ? 15 : -15;
-    // Inject JS to seek. Works for standard HTML5 video tags.
-    // We try multiple selectors to catch common players.
-    final script = """
-      (function() {
-        var v = document.querySelector('video') || document.querySelector('iframe').contentWindow.document.querySelector('video');
-        if (v) {
-           v.currentTime += $seconds;
-           return true;
-        }
-        return false;
-      })();
-    """;
-    
-    try {
-       await _webViewController!.evaluateJavascript(source: script);
-    } catch (_) {
-      // Ignore security errors (cross-origin iframe)
-    }
-
-    setState(() {
-      _showSeekOverlay = true;
-      _isForward = forward;
-    });
-    
-    // Hide overlay after delay
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() {
-          _showSeekOverlay = false;
-        });
-      }
-    });
+  void _watch({int episodeIndex = 0}) {
+    context.push('/watch/${widget.slug}'
+        '?server=$_serverIndex&ep=$episodeIndex');
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final movie = _movie;
+    final seed = widget.seed;
 
-    if (_errorMessage != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Error")),
-        body: Center(child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text("Error loading movie: $_errorMessage", textAlign: TextAlign.center),
-              Text("Slug: ${widget.slug}", style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: _fetchDetail, child: const Text("Retry"))
-            ],
-          ),
-        )),
+    if (movie == null && seed == null) {
+      if (_error != null) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: ErrorState(message: _error!, onRetry: _load),
+        );
+      }
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: LoadingState(message: 'Đang tải thông tin phim...'),
       );
     }
 
-    if (_movie == null) {
-       return Scaffold(
-           appBar: AppBar(title: const Text("Loading...")),
-           body: const Center(child: CircularProgressIndicator())
-       );
-    }
+    final tv = Device.isTv;
+    final hPad = tv ? 48.0 : 16.0;
+    final servers = movie?.episodes ?? const <EpisodeServer>[];
+    final activeServer = servers.isEmpty
+        ? null
+        : servers[_serverIndex.clamp(0, servers.length - 1)];
 
     return Scaffold(
-      appBar: AppBar(title: Text(_movie!.name)),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Video Player Area
-            // Video Player Area
-            AspectRatio(
-              aspectRatio: _aspectRatio,
-              child: _currentEmbedUrl != null 
-                ? Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      InAppWebView(
-                        initialUrlRequest: URLRequest(url: WebUri(_currentEmbedUrl!)),
-                        initialSettings: InAppWebViewSettings(
-                          useHybridComposition: true,
-                          allowsInlineMediaPlayback: true,
-                          javaScriptEnabled: true,
-                          mediaPlaybackRequiresUserGesture: false,
-                          iframeAllow: "camera; microphone",
-                          iframeAllowFullscreen: true,
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: _Backdrop(
+              // Whichever we have: the full record once loaded, the card meanwhile.
+              display: movie ?? seed!,
+              detail: movie,
+              onBack: () => Navigator.of(context).maybePop(),
+              onPlay: movie == null ? null : () => _watch(),
+              horizontalPadding: hPad,
+            ),
+          ),
+          if (movie == null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 30, hPad, 30),
+                child: _error != null
+                    ? ErrorState(message: _error!, onRetry: _load)
+                    : const Center(
+                        child: SizedBox(
+                          width: 26,
+                          height: 26,
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
                         ),
-                        onWebViewCreated: (controller) {
-                          _webViewController = controller;
-                        },
-                        onEnterFullscreen: (controller) {
-                          SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-                        },
-                        onExitFullscreen: (controller) {
-                          SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
-                        },
                       ),
-                      // Gesture Overlay
-                      Positioned.fill(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 50.0), // Leave space for controls
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.translucent,
-                                  onDoubleTap: () => _seekVideo(false),
-                                  child: Container(color: Colors.transparent),
-                                ),
+              ),
+            )
+          else
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (movie.plainDescription.isNotEmpty) ...[
+                      const SectionTitle(title: 'Nội dung'),
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: tv ? 1100 : 720),
+                        child: Text(
+                          movie.plainDescription,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    height: 1.6,
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                    ],
+                    if (movie.actors.isNotEmpty) ...[
+                      _InfoRow(
+                        label: 'Diễn viên',
+                        value: movie.actors.take(8).join(', '),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (movie.director.trim().isNotEmpty) ...[
+                      _InfoRow(label: 'Đạo diễn', value: movie.director),
+                      const SizedBox(height: 8),
+                    ],
+                    if (movie.country.trim().isNotEmpty)
+                      _InfoRow(label: 'Quốc gia', value: movie.country),
+                    const SizedBox(height: 28),
+                    if (servers.isEmpty)
+                      const EmptyState(
+                        message: 'Phim này hiện chưa có nguồn phát.',
+                        icon: Icons.videocam_off_outlined,
+                      )
+                    else ...[
+                      SectionTitle(
+                        title: 'Chọn tập',
+                        trailing: Text(
+                          '${activeServer?.items.length ?? 0} tập',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      if (servers.length > 1) ...[
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (var i = 0; i < servers.length; i++)
+                              TvButton(
+                                label: servers[i].serverName,
+                                selected: i == _serverIndex,
+                                compact: true,
+                                onPressed: () =>
+                                    setState(() => _serverIndex = i),
                               ),
-                              // Center area for standard controls (pass-through)
-                              const Expanded(
-                                flex: 2,
-                                child: IgnorePointer(child: SizedBox()), 
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.translucent,
-                                  onDoubleTap: () => _seekVideo(true),
-                                  child: Container(color: Colors.transparent),
-                                ),
-                              ),
-                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                      ],
+                      if (activeServer != null)
+                        EpisodePicker(
+                          episodes: activeServer.items,
+                          onSelect: (i) => _watch(episodeIndex: i),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Backdrop extends StatelessWidget {
+  const _Backdrop({
+    required this.display,
+    required this.detail,
+    required this.onBack,
+    required this.onPlay,
+    required this.horizontalPadding,
+  });
+
+  /// Movie or MovieDetail — whatever is available for painting right now.
+  final Movie display;
+  final MovieDetail? detail;
+  final VoidCallback onBack;
+  final VoidCallback? onPlay;
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final tv = Device.isTv;
+    final height = tv ? 470.0 : (context.isPhone ? 400.0 : 440.0);
+    final width = MediaQuery.sizeOf(context).width.round();
+    final d = detail;
+
+    final chips = <String>[
+      display.year,
+      display.time,
+      display.quality,
+      display.lang,
+      display.episodeCurrent,
+      ...?d?.categories.take(3),
+    ].where((v) => v.trim().isNotEmpty).toList();
+
+    return SizedBox(
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (display.backdrop.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: display.backdrop,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              memCacheWidth: width,
+              placeholder: (context, _) =>
+                  Container(color: AppColors.surfaceHigh),
+              errorWidget: (context, _, __) =>
+                  Container(color: AppColors.surfaceHigh),
+            )
+          else
+            Container(color: AppColors.surfaceHigh),
+          const DecoratedBox(
+            decoration: BoxDecoration(gradient: AppColors.scrim),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                horizontalPadding, 14, horizontalPadding, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TvIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    tooltip: 'Quay lại',
+                    onPressed: onBack,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (!context.isPhone && display.poster.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 22),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: display.poster,
+                            width: tv ? 170 : 130,
+                            height: tv ? 255 : 195,
+                            fit: BoxFit.cover,
+                            memCacheWidth: (tv ? 170 : 130) * 2,
+                            errorWidget: (context, _, __) => Container(
+                              width: tv ? 170 : 130,
+                              height: tv ? 255 : 195,
+                              color: AppColors.surfaceHigh,
+                            ),
                           ),
                         ),
                       ),
-                      if (_showSeekOverlay) 
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _isForward ? Icons.fast_forward : Icons.fast_rewind,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                                Text(
-                                  "${_isForward ? '+' : '-'}$_seekAmount s",
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                )
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            display.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: (tv
+                                    ? Theme.of(context).textTheme.displaySmall
+                                    : Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall)
+                                ?.copyWith(
+                              shadows: const [
+                                Shadow(color: Colors.black87, blurRadius: 12),
                               ],
                             ),
                           ),
-                        ),
-                    ],
-                  )
-                : Container(
-                    color: Colors.black,
-                    child: const Center(
-                        child: Icon(Icons.play_circle_outline,
-                            color: Colors.white, size: 60)),
-                  ),
-            ),
-            
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: _movie!.thumbUrl,
-                          width: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          if (display.originName.trim().isNotEmpty) ...[
+                            const SizedBox(height: 4),
                             Text(
-                              _movie!.name,
-                              style: Theme.of(context).textTheme.titleLarge,
+                              display.originName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                            const SizedBox(height: 8),
-                            Text("Thời lượng: ${_movie!.time}"),
-                            Text("Ngôn ngữ: ${_movie!.language}"),
-                            Text("Năm: ${_movie!.year}"),
-                            Text("Quốc gia: ${_movie!.country}"),
                           ],
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text("Danh sách tập:", style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  ..._movie!.episodes.map((server) {
-                     return Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         Padding(
-                           padding: const EdgeInsets.symmetric(vertical: 8.0),
-                           child: Chip(label: Text(server.serverName), backgroundColor: Colors.blue.shade100,),
-                         ),
-                         Wrap(
-                           spacing: 8,
-                           runSpacing: 8,
-                           children: server.items.map((ep) {
-                             final isSelected = _selectedServer == server.serverName && _selectedEpisodeSlug == ep.slug;
-                             return ActionChip(
-                               label: Text(ep.name),
-                               backgroundColor: isSelected ? Colors.blue : null,
-                               labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
-                               onPressed: () => _selectEpisode(server.serverName, ep),
-                             );
-                           }).toList(),
-                         )
-                       ],
-                     );
-                  }).toList(),
-                  const SizedBox(height: 20),
-                  const Text("Nội dung:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text(_movie!.description),
-                ],
-              ),
-            )
-          ],
-        ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final chip in chips)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(7),
+                                    border: Border.all(color: Colors.white24),
+                                  ),
+                                  child: Text(
+                                    chip,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                            color: AppColors.textPrimary),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              TvButton(
+                                label: onPlay == null
+                                    ? 'Đang tải...'
+                                    : 'Xem ngay',
+                                icon: Icons.play_arrow_rounded,
+                                filled: true,
+                                autofocus: true,
+                                onPressed: onPlay,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 96,
+          child: Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: AppColors.textMuted),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }
