@@ -5,12 +5,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Email của quản trị viên được phép xem log (trang /admin). Email này phải
-    // trùng với tài khoản đã tạo ở Authentication -> Users. Thêm người xem log
-    // thì thêm email vào danh sách bên dưới.
+    // Ai được xem log (trang /admin).
+    //
+    // UID lấy từ Firebase Console -> Authentication -> Users, cột "User UID".
+    // Khớp theo UID chắc ăn hơn email (không sợ sai hoa/thường hay đổi email);
+    // dòng email để dự phòng, trúng cái nào cũng được.
+    //
+    // Thêm người xem log: thêm một dòng `request.auth.uid == '<uid>' ||`.
     function isAdmin() {
-      return request.auth != null &&
-             request.auth.token.email in ['admin@huytehuy.id.vn'];
+      return request.auth != null && (
+        request.auth.uid == 'o4iuTxaTuJQOzMHJwRPjFsY2gLJ3' ||
+        request.auth.token.email == 'admin@huytehuy.id.vn'
+      );
     }
 
     // Log xem phim: máy nào, lúc nào, phim gì, tập mấy.

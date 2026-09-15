@@ -86,6 +86,29 @@ const toRow = (doc: QueryDocumentSnapshot<DocumentData>): LogRow => {
   };
 };
 
+/**
+ * Đổi lỗi Firestore thành câu tiếng Việt nói rõ phải sửa ở đâu.
+ * Mã lỗi thật luôn được giữ ở cuối để còn tra cứu được.
+ */
+const explainFirestoreError = (err: unknown, email: string): string => {
+  const code = (err as { code?: string })?.code || '';
+  const detail = (err as { message?: string })?.message || String(err);
+
+  if (code === 'permission-denied') {
+    return `Firestore từ chối quyền đọc. Tài khoản đang đăng nhập là "${email}" — email này phải nằm trong hàm isAdmin() của firestore.rules, và rules phải được bấm Publish trên Firebase Console.`;
+  }
+  if (code === 'failed-precondition') {
+    return `Firestore thiếu index cho truy vấn này. Mở Console (F12), Firestore in ra sẵn một đường link tạo index — bấm vào đó rồi đợi index build xong. (${detail})`;
+  }
+  if (code === 'unauthenticated') {
+    return 'Phiên đăng nhập đã hết hạn. Đăng xuất rồi đăng nhập lại.';
+  }
+  if (code === 'unavailable') {
+    return 'Không kết nối được tới Firestore. Kiểm tra mạng, hoặc trình chặn quảng cáo đang chặn firestore.googleapis.com.';
+  }
+  return `Không tải được log: ${detail}`;
+};
+
 function LoginForm({ onError }: { onError: (message: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -184,7 +207,7 @@ function Admin() {
         setHasMore(snapshot.docs.length === PAGE_SIZE);
       } catch (err) {
         console.error('Không tải được log:', err);
-        setError('Không tải được log. Kiểm tra lại Firestore Rules cho collection "watch-logs".');
+        setError(explainFirestoreError(err, auth?.currentUser?.email || ''));
       } finally {
         setLoading(false);
       }

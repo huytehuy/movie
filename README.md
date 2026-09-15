@@ -53,11 +53,19 @@ Người xem chỉ **ghi** được log, không đọc được. Lịch sử hi�
 1. **Firebase Console → Authentication → Sign-in method**: bật **Email/Password**.
 2. Tab **Users → Add user**: tạo tài khoản `admin@huytehuy.id.vn` với mật khẩu
    bạn tự đặt. (Mật khẩu không nằm trong code — ai đọc source cũng sẽ thấy.)
-3. Dán toàn bộ [`firestore.rules`](./firestore.rules) vào **Firestore Database →
-   Rules → Publish**. File đã ghi sẵn `admin@huytehuy.id.vn` là email được đọc log;
-   muốn thêm người thì thêm email vào danh sách trong hàm `isAdmin()`.
-4. Điền các biến `VITE_FIREBASE_*` (xem [.env.example](./.env.example)) vào file
+3. UID của tài khoản admin đã ghi sẵn trong [`firestore.rules`](./firestore.rules).
+   Tạo lại tài khoản khác thì copy **User UID** mới ở **Authentication → Users**
+   rồi thay vào hàm `isAdmin()`.
+4. Dán toàn bộ file đó vào **Firestore Database → Rules** rồi bấm **Publish**
+   (bấm Publish, không phải chỉ gõ vào ô rồi thoát ra).
+5. Điền các biến `VITE_FIREBASE_*` (xem [.env.example](./.env.example)) vào file
    `.env` khi chạy local, và vào Environment Variables của Vercel khi deploy.
+
+Nếu `/admin` báo `Missing or insufficient permissions` thì gần như chắc chắn là
+rules chưa Publish, hoặc UID/email trong `isAdmin()` không khớp với tài khoản
+đang đăng nhập (email hiện ngay dưới tiêu đề "Log xem phim"). Kiểm tra nhanh
+bằng **Firestore → Rules → Rules Playground**: chọn `get`, path
+`watch-logs/test`, bật Authenticated và điền UID admin — phải ra **Allow**.
 
 Vào `/admin` để đăng nhập và xem log: lọc theo thiết bị, tìm theo tên phim / IP,
 kèm số lượt xem, số thiết bị và phim được xem nhiều nhất.
