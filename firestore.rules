@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Rules cho Firestore: dán nội dung này vào Firebase Console
+// (Firestore Database -> Rules -> Publish).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Email của quản trị viên được phép xem log (trang /admin). Email này phải
+    // trùng với tài khoản đã tạo ở Authentication -> Users. Thêm người xem log
+    // thì thêm email vào danh sách bên dưới.
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email in ['admin@huytehuy.id.vn'];
+    }
+
+    // Log xem phim: máy nào, lúc nào, phim gì, tập mấy.
+    match /watch-logs/{logId} {
+      // Người xem không đăng nhập nhưng vẫn ghi được log — chỉ ghi thêm,
+      // không sửa, không xoá, không đọc của người khác.
+      allow create: if request.resource.data.keys().hasAll(
+                        ['deviceId', 'filmId', 'episodeName', 'timestamp'])
+                    && request.resource.data.deviceId is string
+                    && request.resource.data.deviceId.size() <= 64
+                    && request.resource.data.filmName.size() <= 200
+                    && request.resource.data.timestamp == request.time;
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Lịch sử cũ theo tài khoản Google — không còn ghi mới, khoá luôn.
+    match /watch-history/{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

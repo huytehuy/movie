@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter_app/src/core/device.dart';
-import 'package:flutter_app/src/features/auth/auth_service.dart';
 import 'package:flutter_app/src/shared/focusable.dart';
 import 'package:flutter_app/src/theme/app_theme.dart';
 
@@ -287,28 +286,23 @@ class _AppShellState extends State<AppShell> {
                         }
                       },
                     ),
-                  AnimatedBuilder(
-                    animation: AuthService(),
-                    builder: (context, _) {
-                      if (!AuthService().isAvailable) return const SizedBox();
-                      return _RailItem(
-                        destination: const _NavDestination(
-                            'Lịch sử', Icons.history_rounded, '/history'),
-                        focusNode: _railNodes.last,
-                        expanded: expanded,
-                        selected: _isActive('/history'),
-                        onTap: () {
-                          _go('/history');
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) _focusContent();
-                          });
-                        },
-                        onFocusChange: (focused) {
-                          if (focused && !_railExpanded) {
-                            setState(() => _railExpanded = true);
-                          }
-                        },
-                      );
+                  // Lịch sử xem của chính máy này — không cần đăng nhập nữa.
+                  _RailItem(
+                    destination: const _NavDestination(
+                        'Lịch sử', Icons.history_rounded, '/history'),
+                    focusNode: _railNodes.last,
+                    expanded: expanded,
+                    selected: _isActive('/history'),
+                    onTap: () {
+                      _go('/history');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) _focusContent();
+                      });
+                    },
+                    onFocusChange: (focused) {
+                      if (focused && !_railExpanded) {
+                        setState(() => _railExpanded = true);
+                      }
                     },
                   ),
                 ],

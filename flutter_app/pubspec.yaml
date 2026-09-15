@@ -38,8 +38,8 @@ dependencies:
   dio: ^5.9.1
   cached_network_image: ^3.4.1
   firebase_core: ^4.4.0
-  firebase_auth: ^6.1.4
-  google_sign_in: 6.2.1
+  # Lưu deviceId + lịch sử xem ngay trên máy (không còn tài khoản đăng nhập).
+  shared_preferences: ^2.3.2
   # Keeps the screen on while a movie is playing.
   wakelock_plus: ^1.4.0
   # The player: the site's own web embed, driven from Flutter over a JS bridge

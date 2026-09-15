@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:flutter_app/src/core/device.dart';
 import 'package:flutter_app/src/features/home/movie_detail_model.dart';
 import 'package:flutter_app/src/services/movie_service.dart';
+import 'package:flutter_app/src/services/watch_log_service.dart';
 import 'package:flutter_app/src/shared/focusable.dart';
 import 'package:flutter_app/src/shared/states.dart';
 import 'package:flutter_app/src/theme/app_theme.dart';
@@ -144,6 +145,9 @@ class _WatchScreenState extends State<WatchScreen> {
   int _serverIndex = 0;
   int _episodeIndex = 0;
 
+  /// Tập vừa ghi log, để bấm tải lại không sinh ra bản ghi trùng.
+  String? _lastLoggedKey;
+
   InAppWebViewController? _web;
   bool _pageLoaded = false;
 
@@ -255,6 +259,7 @@ class _WatchScreenState extends State<WatchScreen> {
         return;
       }
       setState(() => _stage = _Stage.ready);
+      _logCurrentEpisode();
       _startPolling();
       _showControls();
     } catch (e) {
@@ -418,7 +423,30 @@ class _WatchScreenState extends State<WatchScreen> {
     _showControls();
   }
 
+  /// Ghi lại "máy này, lúc này, phim gì, tập mấy".
+  ///
+  /// Bấm tải lại cùng một tập thì không ghi thêm dòng nữa — chỉ đổi tập hoặc
+  /// đổi server mới tính là một lượt xem mới.
+  void _logCurrentEpisode() {
+    final movie = _movie;
+    final episode = _episode;
+    if (movie == null || episode == null) return;
+
+    final key = '${widget.slug}|${episode.name}|${_server?.serverName ?? ''}';
+    if (key == _lastLoggedKey) return;
+    _lastLoggedKey = key;
+
+    WatchLogService().logWatch(
+      filmId: widget.slug,
+      filmName: movie.name,
+      episodeName: episode.name,
+      serverName: _server?.serverName ?? '',
+      image: movie.thumbUrl,
+    );
+  }
+
   void _reopen() {
+    _logCurrentEpisode();
     _advanced = false;
     _lastPaused = true;
     _videoState.value = const _VideoState();

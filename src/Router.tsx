@@ -6,6 +6,7 @@ import MovieList from './components/MovieList'
 import NotFound from './components/NotFound'
 import History from './pages/History'
 import WatchPartyTest from './WatchPartyTest'
+import Admin from './pages/Admin'
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/detail/:slug@:id" element={<DetailMovie />} />
       <Route path="/search/:id" element={<SearchResults />} />
       <Route path="/history" element={<History />} />
+      <Route path="/admin" element={<Admin />} />
       <Route path="/watch-party" element={<WatchPartyTest />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

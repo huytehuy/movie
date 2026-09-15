@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_app/src/core/device.dart';
-import 'package:flutter_app/src/features/auth/auth_service.dart';
+import 'package:flutter_app/src/services/watch_log_service.dart';
 import 'package:flutter_app/src/router.dart';
 import 'package:flutter_app/src/shared/focusable.dart';
 import 'package:flutter_app/src/theme/app_theme.dart';
@@ -30,22 +30,25 @@ Future<void> main() async {
     systemNavigationBarIconBrightness: Brightness.light,
   ));
 
+  // The device id and the on-device history must be ready before the first
+  // episode can be logged; this is a single SharedPreferences read.
+  await WatchLogService().init();
+
   runApp(const MyApp());
 
   // Firebase is optional: the app ships without google-services.json, so this
   // throws on a plain build. Doing it after runApp keeps a failure that can
-  // take seconds off the path to the first frame; the auth UI hides itself
-  // until this succeeds.
-  _initAuthInBackground();
+  // take seconds off the path to the first frame; watch logging simply stays
+  // local until it succeeds.
+  _initFirebaseInBackground();
 }
 
-Future<void> _initAuthInBackground() async {
+Future<void> _initFirebaseInBackground() async {
   try {
     await Firebase.initializeApp();
   } catch (e) {
-    debugPrint('Firebase not configured: $e');
+    debugPrint('Firebase not configured, watch logs stay on-device: $e');
   }
-  await AuthService().init();
 }
 
 class MyApp extends StatelessWidget {

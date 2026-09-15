@@ -6,8 +6,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import PlaceHolderImage from "../assets/800@3x.png";
 import { Helmet } from "react-helmet-async";
-import { auth, db } from "../firebase/firebaseConfig";
-import { collection, addDoc, serverTimestamp, updateDoc, getDocs, where, query } from 'firebase/firestore';
+import { logWatch } from "../services/watchLog";
 import { notifications } from "@mantine/notifications";
 import { API, ophimImage } from "../config/api";
 import { findGenreByName } from "../data/filters";
@@ -176,51 +175,15 @@ const DetailMovie = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, episode, type]);
 
-  const saveWatchHistory = async (item: { name: string }, serverName: string | null) => {
-    try {
-      const userId = auth?.currentUser?.uid;
-      if (!userId || !db) {
-        notifications.show({
-          title: 'Lưu ý',
-          message: 'Đăng nhập để lưu lịch sử xem phim',
-          color: 'yellow'
-        });
-        return;
-      }
-
-      const historyData = {
-        filmId: id || '',
-        filmName: infoRef.current?.name || '',
-        episodeName: item.name,
-        serverName: serverName,
-        timestamp: serverTimestamp(),
-        lastWatched: new Date().toISOString(),
-        image: infoRef.current?.thumb || '',
-      };
-
-      const historyRef = collection(db, 'watch-history', userId, 'history');
-      const q = query(
-        historyRef,
-        where('filmId', '==', id),
-        where('episodeName', '==', item.name),
-        where('serverName', '==', serverName)
-      );
-
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        await addDoc(historyRef, historyData);
-      } else {
-        // Đã có bản ghi thì chỉ cập nhật thời gian xem
-        const docRef = querySnapshot.docs[0].ref;
-        await updateDoc(docRef, {
-          timestamp: serverTimestamp(),
-          lastWatched: new Date().toISOString()
-        });
-      }
-    } catch (error) {
-      console.error('Error saving watch history:', error);
-    }
+  /** Ghi lại: máy nào, lúc nào, phim gì, tập mấy (xem src/services/watchLog.ts) */
+  const saveWatchHistory = (item: { name: string }, serverName: string | null) => {
+    logWatch({
+      filmId: id || '',
+      filmName: infoRef.current?.name || '',
+      episodeName: item.name,
+      serverName,
+      image: infoRef.current?.thumb || '',
+    });
   };
 
   const handleShare = async () => {
@@ -301,7 +264,7 @@ const DetailMovie = () => {
     try {
       setCurrent({ ...item, serverLabel });
       playerBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      await saveWatchHistory(item, serverLabel);
+      saveWatchHistory(item, serverLabel);
     } finally {
       setTimeout(() => {
         setLoadingButton((prev) => ({

@@ -6,13 +6,10 @@ import "@mantine/notifications/styles.css";
 import { useDisclosure } from "@mantine/hooks";
 import Logo from "./assets/HUYTEHUY.png";
 import { Link, useLocation } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import SearchInput from "./components/SearchInput";
-import GoogleLogin from "./components/Login/Google";
 import ThemeToggle from "./components/ThemeToggle";
 import InstallPwaButton from "./components/InstallPwaButton";
-import { auth } from "./firebase/firebaseConfig";
-import { onAuthStateChanged } from "firebase/auth";
 
 const NAV_ITEMS = [
   { name: "Trang chủ", link: "" },
@@ -20,34 +17,17 @@ const NAV_ITEMS = [
   { name: "Phim bộ", link: "phim_bo" },
   { name: "Phim đang chiếu", link: "phim_dang_chieu" },
   { name: "Phim mới cập nhật", link: "phim_moi_cap_nhat" },
+  { name: "Lịch sử xem", link: "history" },
 ];
 
 function App() {
   const [opened, { toggle, close }] = useDisclosure();
-  const [authChecked, setAuthChecked] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    if (!auth) {
-      setAuthChecked(true);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, () => {
-      setAuthChecked(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   // Đóng menu mobile khi chuyển trang
   useEffect(() => {
     close();
   }, [location.pathname, close]);
-
-  if (!authChecked) {
-    return <LoadingOverlay visible />;
-  }
 
   const currentPath = location.pathname.substring(1);
   const items = NAV_ITEMS.map((item) => (
@@ -92,9 +72,6 @@ function App() {
               <InstallPwaButton />
             </Box>
             <ThemeToggle />
-            <Box visibleFrom="sm">
-              <GoogleLogin />
-            </Box>
           </Group>
         </AppShell.Header>
 
@@ -105,9 +82,6 @@ function App() {
             paddingLeft: "calc(var(--mantine-spacing-md) + env(safe-area-inset-left))",
           }}
         >
-          <Box hiddenFrom="sm" mb="md">
-            <GoogleLogin />
-          </Box>
           <Box w="100%">{items}</Box>
           <Box hiddenFrom="sm" mt="md">
             <InstallPwaButton variant="full" />
